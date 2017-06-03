@@ -610,12 +610,9 @@ breakpoint_notify (int num, const char *action)
   b = get_breakpoint (num);
   if (b == NULL)
     {
-      struct tracepoint *tp;
-
-      tp = get_tracepoint (num);
-      if (tp == NULL)
+      b = get_tracepoint (num);
+      if (b == NULL)
 	return;
-      b = &tp->base;
     }
 
   if (b->number < 0
