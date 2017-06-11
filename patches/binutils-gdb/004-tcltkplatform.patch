@@ -96,7 +96,7 @@ diff -Naurp a/gdb/acinclude.m4 b/gdb/acinclude.m4
 diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 --- a/gdb/configure.ac	2016-11-25 14:24:44.200083830 +0100
 +++ b/gdb/configure.ac	2016-11-25 14:35:02.115813705 +0100
-@@ -2050,60 +2050,32 @@ if test "${enable_gdbtk}" = "yes"; then
+@@ -2050,60 +2050,34 @@ if test "${enable_gdbtk}" = "yes"; then
      if test -z "${no_tcl}" -a -z "${no_tk}"; then
  	SC_LOAD_TCLCONFIG
  
@@ -131,6 +131,7 @@ diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 +	TCL_LIBRARY="${TCL_LIB_SPEC}"
 +	TCL_DEPS=""
 +	TCL_PLATFORM_DEFINE="TCL_PLATFORM_`echo \"${TCL_PLATFORM}\" | tr 'a-z-' 'A-Z_'`"
++	TCL_PLATFORM_DEFINE="${TCL_PLATFORM_DEFINE}=${TCL_PLATFORM_DEFINE}"
  	AC_SUBST(TCL_INCLUDE)
  	AC_SUBST(TCL_LIBRARY)
 -        AC_SUBST(TCL_DEPS)
@@ -162,6 +163,7 @@ diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 +	TK_LIBRARY=${TK_LIB_SPEC}
 +	TK_DEPS=""
 +	TK_PLATFORM_DEFINE="TK_PLATFORM_`echo \"${TK_PLATFORM}\" | tr 'a-z-' 'A-Z_'`"
++	TK_PLATFORM_DEFINE="${TK_PLATFORM_DEFINE}=${TK_PLATFORM_DEFINE}"
  	AC_SUBST(TK_INCLUDE)
  	AC_SUBST(TK_LIBRARY)
  	AC_SUBST(TK_DEPS)
