@@ -837,7 +837,7 @@ tracepoint_exists (char *args)
   VEC(breakpoint_p) *tp_vec = NULL;
   int ix;
   struct breakpoint *tp;
-  struct symtabs_and_lines sals;
+  std::vector<symtab_and_line> sals;
   event_location_up location;
   char *file = NULL;
   int result = -1;
@@ -845,26 +845,26 @@ tracepoint_exists (char *args)
   location = string_to_event_location (&args, current_language);
   sals = decode_line_1 (location.get (),
 			DECODE_LINE_FUNFIRSTLINE, NULL, NULL, 0);
-  if (sals.nelts == 1)
+  if (sals.size () == 1)
     {
-      resolve_sal_pc (&sals.sals[0]);
-      file = (char *) xmalloc (strlen (SYMTAB_DIRNAME (sals.sals[0].symtab)) +
-			       strlen (sals.sals[0].symtab->filename) + 1);
+      resolve_sal_pc (&sals[0]);
+      file = (char *) xmalloc (strlen (SYMTAB_DIRNAME (sals[0].symtab)) +
+			       strlen (sals[0].symtab->filename) + 1);
       if (file != NULL)
 	{
-	  strcpy (file, SYMTAB_DIRNAME (sals.sals[0].symtab));
-	  strcat (file, sals.sals[0].symtab->filename);
+	  strcpy (file, SYMTAB_DIRNAME (sals[0].symtab));
+	  strcat (file, sals[0].symtab->filename);
 
 	  tp_vec = all_tracepoints ();
 	  for (ix = 0; VEC_iterate (breakpoint_p, tp_vec, ix, tp); ix++)
 	    {
-	      if (tp->loc && tp->loc->address == sals.sals[0].pc)
+	      if (tp->loc && tp->loc->address == sals[0].pc)
 		result = tp->number;
 #if 0
 	      /* Why is this here? This messes up assembly traces */
 	      else if (tp->source_file != NULL
 		       && strcmp (tp->source_file, file) == 0
-		       && sals.sals[0].line == tp->line_number)
+		       && sals[0].line == tp->line_number)
 		result = tp->number;
 #endif
 	    }

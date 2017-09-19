@@ -283,7 +283,7 @@ static int
 gdb_get_vars_command (ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
-  struct symtabs_and_lines sals;
+  std::vector<symtab_and_line> sals;
   struct symbol *sym;
   const struct block *block;
   char *args;
@@ -311,17 +311,17 @@ gdb_get_vars_command (ClientData clientData, Tcl_Interp *interp,
       location = string_to_event_location (&args, current_language);
       sals = decode_line_1 (location.get (),
 			    DECODE_LINE_FUNFIRSTLINE, NULL, NULL, 0);
-      if (sals.nelts == 0)
+      if (sals.size () == 0)
 	{
 	  gdbtk_set_result (interp, "error decoding line");
 	  return TCL_ERROR;
 	}
 
       /* Resolve all line numbers to PC's */
-      for (i = 0; i < sals.nelts; i++)
-	resolve_sal_pc (&sals.sals[i]);
+      for (i = 0; i < sals.size (); i++)
+	resolve_sal_pc (&sals[i]);
 
-      block = block_for_pc (sals.sals[0].pc);
+      block = block_for_pc (sals[0].pc);
     }
   else
     {
@@ -552,7 +552,7 @@ static void
 get_frame_name (Tcl_Interp *interp, Tcl_Obj *list, struct frame_info *fi)
 {
   struct symbol *func = NULL;
-  char *funname = NULL;
+  gdb::unique_xmalloc_ptr<char> funname;
   enum language funlang = language_unknown;
   Tcl_Obj *objv[1];
 
@@ -575,18 +575,17 @@ get_frame_name (Tcl_Interp *interp, Tcl_Obj *list, struct frame_info *fi)
       return;
     }
 
-  find_frame_funname (fi, &funname, &funlang, &func);
+  funname = find_frame_funname (fi, &funlang, &func);
 
   if (funname)
     {
-      objv[0] = Tcl_NewStringObj (funname, -1);
+      objv[0] = Tcl_NewStringObj (funname.get (), -1);
       Tcl_ListObjAppendElement (interp, list, objv[0]);
-      xfree (funname);
     }
   else
     {
       char *lib = NULL;
-      objv[0] = Tcl_NewStringObj (funname ? funname : "??", -1);
+      objv[0] = Tcl_NewStringObj ("??", -1);
 #ifdef PC_SOLIB
       lib = PC_SOLIB (get_frame_pc (fi));
 #else

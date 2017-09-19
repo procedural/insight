@@ -1004,7 +1004,7 @@ static int
 gdb_get_line_command (ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
-  struct symtabs_and_lines sals;
+  std::vector<symtab_and_line> sals;
   char *args;
   event_location_up location;
 
@@ -1018,8 +1018,8 @@ gdb_get_line_command (ClientData clientData, Tcl_Interp *interp,
   location = string_to_event_location (&args, current_language);
   sals = decode_line_1 (location.get (),
 			DECODE_LINE_FUNFIRSTLINE, NULL, NULL, 0);
-  if (sals.nelts == 1)
-    Tcl_SetIntObj (result_ptr->obj_ptr, sals.sals[0].line);
+  if (sals.size () == 1)
+    Tcl_SetIntObj (result_ptr->obj_ptr, sals[0].line);
   else
     Tcl_SetStringObj (result_ptr->obj_ptr, "N/A", -1);
 
@@ -1040,7 +1040,7 @@ static int
 gdb_get_file_command (ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
-  struct symtabs_and_lines sals;
+  std::vector<symtab_and_line> sals;
   char *args;
   event_location_up location;
 
@@ -1054,8 +1054,8 @@ gdb_get_file_command (ClientData clientData, Tcl_Interp *interp,
   location = string_to_event_location (&args, current_language);
   sals = decode_line_1 (location.get (),
 			DECODE_LINE_FUNFIRSTLINE, NULL, NULL, 0);
-  if (sals.nelts == 1)
-    Tcl_SetStringObj (result_ptr->obj_ptr, sals.sals[0].symtab->filename, -1);
+  if (sals.size () == 1)
+    Tcl_SetStringObj (result_ptr->obj_ptr, sals[0].symtab->filename, -1);
   else
     Tcl_SetStringObj (result_ptr->obj_ptr, "N/A", -1);
 
@@ -1076,7 +1076,7 @@ gdb_get_function_command (ClientData clientData, Tcl_Interp *interp,
 			  int objc, Tcl_Obj *CONST objv[])
 {
   const char *function;
-  struct symtabs_and_lines sals;
+  std::vector<symtab_and_line> sals;
   char *args;
   event_location_up location;
 
@@ -1090,10 +1090,10 @@ gdb_get_function_command (ClientData clientData, Tcl_Interp *interp,
   location = string_to_event_location (&args, current_language);
   sals = decode_line_1 (location.get (),
 			DECODE_LINE_FUNFIRSTLINE, NULL, NULL, 0);
-  if (sals.nelts == 1)
+  if (sals.size () == 1)
     {
-      resolve_sal_pc (&sals.sals[0]);
-      function = pc_function_name (sals.sals[0].pc);
+      resolve_sal_pc (&sals[0]);
+      function = pc_function_name (sals[0].pc);
       Tcl_SetStringObj (result_ptr->obj_ptr, function, -1);
     }
   else
@@ -2258,7 +2258,7 @@ gdb_loc (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST obj
 		 pc on the stack, so what happens is the next instruction
 		 is highlighted. FIXME */
 	      pc = frame_pc;
-	      find_frame_sal (frame, &sal);
+	      sal = find_frame_sal (frame);
 	    }
 	  else
 	    {
@@ -2269,18 +2269,17 @@ gdb_loc (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST obj
     }
   else if (objc == 2)
     {
-      struct symtabs_and_lines sals;
+      std::vector<symtab_and_line> sals;
 
       sals = decode_line_with_current_source (Tcl_GetStringFromObj (objv[1], NULL), 1);
 
-      sal = sals.sals[0];
-      free (sals.sals);
-
-      if (sals.nelts != 1)
+      if (sals.size () != 1)
 	{
 	  gdbtk_set_result (interp, "Ambiguous line spec", -1);
 	  return TCL_ERROR;
 	}
+
+      sal = sals[0];
       resolve_sal_pc (&sal);
       pc = sal.pc;
     }
