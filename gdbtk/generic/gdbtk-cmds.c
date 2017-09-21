@@ -148,6 +148,7 @@ struct disassembly_client_data
 int disassemble_from_exec = -1;
 
 extern int gdb_variable_init (Tcl_Interp * interp);
+extern void gdbtk_delete_all_breakpoints (void);
 
 /*
  * Declarations for routines exported from this file
@@ -494,7 +495,7 @@ gdb_clear_file (ClientData clientData, Tcl_Interp *interp,
 	target_kill ();
     }
 
-  delete_command (NULL, 0);
+  gdbtk_delete_all_breakpoints ();
   exec_file_clear (0);
   symbol_file_clear (0);
 

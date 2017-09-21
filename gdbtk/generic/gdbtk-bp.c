@@ -44,6 +44,11 @@ extern struct breakpoint *breakpoint_chain;
 
 #define ALL_BREAKPOINTS(B)  for (B = breakpoint_chain; B; B = B->next)
 
+#define ALL_BREAKPOINTS_SAFE(B,TMP)     \
+        for (B = breakpoint_chain;      \
+             B ? (TMP=B->next, 1): 0;   \
+             B = TMP)
+
 /* From gdbtk-hooks.c */
 extern void report_error (void);
 
@@ -114,6 +119,8 @@ void gdbtk_create_breakpoint (struct breakpoint *);
 void gdbtk_delete_breakpoint (struct breakpoint *);
 void gdbtk_modify_breakpoint (struct breakpoint *);
 static void breakpoint_notify (int, const char *);
+
+void gdbtk_delete_all_breakpoints (void);
 
 int
 Gdbtk_Breakpoint_Init (Tcl_Interp *interp)
@@ -593,6 +600,16 @@ gdbtk_modify_breakpoint (struct breakpoint *b)
 {
   if (b->number >= 0)
     breakpoint_notify (b->number, "modify");
+}
+
+void
+gdbtk_delete_all_breakpoints (void)
+{
+  struct breakpoint *b, *tmp;
+
+  ALL_BREAKPOINTS_SAFE (b, tmp)
+    if (user_breakpoint_p (b))
+      delete_breakpoint (b);
 }
 
 /* This is the generic function for handling changes in
