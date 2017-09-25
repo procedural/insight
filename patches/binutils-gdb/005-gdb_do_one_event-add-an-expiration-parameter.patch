@@ -121,7 +121,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
 diff -Naurp binutils-gdb.orig/gdb/top.c binutils-gdb.new/gdb/top.c
 --- binutils-gdb.orig/gdb/top.c	2016-10-28 11:35:18.679159905 +0100
 +++ binutils-gdb.new/gdb/top.c	2016-10-28 12:34:54.593738064 +0100
-@@ -543,7 +543,7 @@ wait_sync_command_done (void)
+@@ -540,7 +540,7 @@ wait_sync_command_done (void)
    scoped_restore save_ui = make_scoped_restore (&current_ui);
    struct ui *ui = current_ui;
  
@@ -130,7 +130,7 @@ diff -Naurp binutils-gdb.orig/gdb/top.c binutils-gdb.new/gdb/top.c
      if (ui->prompt_state != PROMPT_BLOCKED)
        break;
  }
-@@ -1020,7 +1020,7 @@ gdb_readline_wrapper (const char *prompt
+@@ -1017,7 +1017,7 @@ gdb_readline_wrapper (const char *prompt
      (*after_char_processing_hook) ();
    gdb_assert (after_char_processing_hook == NULL);
  
