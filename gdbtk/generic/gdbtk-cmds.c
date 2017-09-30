@@ -1006,7 +1006,7 @@ gdb_get_line_command (ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
   std::vector<symtab_and_line> sals;
-  char *args;
+  const char *args;
   event_location_up location;
 
   if (objc != 2)
@@ -1042,7 +1042,7 @@ gdb_get_file_command (ClientData clientData, Tcl_Interp *interp,
 		      int objc, Tcl_Obj *CONST objv[])
 {
   std::vector<symtab_and_line> sals;
-  char *args;
+  const char *args;
   event_location_up location;
 
   if (objc != 2)
@@ -1078,7 +1078,7 @@ gdb_get_function_command (ClientData clientData, Tcl_Interp *interp,
 {
   const char *function;
   std::vector<symtab_and_line> sals;
-  char *args;
+  const char *args;
   event_location_up location;
 
   if (objc != 2)

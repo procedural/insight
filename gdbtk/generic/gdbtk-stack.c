@@ -286,7 +286,7 @@ gdb_get_vars_command (ClientData clientData, Tcl_Interp *interp,
   std::vector<symtab_and_line> sals;
   struct symbol *sym;
   const struct block *block;
-  char *args;
+  const char *args;
   struct block_iterator iter;
   int i, arguments;
 

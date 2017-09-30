@@ -77,7 +77,7 @@ static void gdbtk_trace_find (int tfnum, int tpnum);
 static void gdbtk_trace_start_stop (int, int);
 static void gdbtk_attach (void);
 static void gdbtk_detach (void);
-static void gdbtk_file_changed (char *);
+static void gdbtk_file_changed (const char *);
 static void gdbtk_exec_file_display (const char *);
 static void gdbtk_call_command (struct cmd_list_element *, char *, int);
 static ptid_t gdbtk_wait (ptid_t, struct target_waitstatus *, int);
@@ -760,7 +760,7 @@ gdbtk_context_change (int num)
 
 /* Called from file_command */
 static void
-gdbtk_file_changed (char *filename)
+gdbtk_file_changed (const char *filename)
 {
   gdbtk_two_elem_cmd ("gdbtk_tcl_file_changed", filename);
 }

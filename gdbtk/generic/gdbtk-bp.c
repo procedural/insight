@@ -111,7 +111,7 @@ static int gdb_tracepoint_exists_command (ClientData, Tcl_Interp *,
 					  int, Tcl_Obj * CONST objv[]);
 static Tcl_Obj *get_breakpoint_commands (struct command_line *cmd);
 
-static int tracepoint_exists (char *args);
+static int tracepoint_exists (const char *args);
 
 /* Breakpoint/tracepoint events and related functions */
 
@@ -502,7 +502,8 @@ gdb_set_bp (ClientData clientData, Tcl_Interp *interp,
 {
   int ret = TCL_ERROR;
   int temp, ignore_count, thread, pending, enabled;
-  char *address, *typestr, *condition;
+  const char *address;
+  char *typestr, *condition;
   event_location_up location;
   struct gdb_exception e;
 
@@ -849,7 +850,7 @@ gdb_trace_status (ClientData clientData,
 
 /* returns -1 if not found, tracepoint # if found */
 static int
-tracepoint_exists (char *args)
+tracepoint_exists (const char *args)
 {
   VEC(breakpoint_p) *tp_vec = NULL;
   int ix;
@@ -899,7 +900,7 @@ gdb_tracepoint_exists_command (ClientData clientData,
 			       int objc,
 			       Tcl_Obj *CONST objv[])
 {
-  char *args;
+  const char *args;
 
   if (objc != 2)
     {

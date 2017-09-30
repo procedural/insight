@@ -311,7 +311,7 @@ variable_create (Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
     {"-expr", "-frame", NULL};
   struct varobj *var;
   char *name;
-  char *obj_name;
+  std::string obj_name;
   int index;
   CORE_ADDR frame = (CORE_ADDR) -1;
   enum varobj_type how_specified = USE_SELECTED_FRAME;
@@ -336,7 +336,7 @@ variable_create (Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
   else
     {
       /* specified name for object */
-      obj_name = xstrdup (name);
+      obj_name = name;
       objv++;
       objc--;
     }
@@ -348,7 +348,6 @@ variable_create (Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
       if (Tcl_GetIndexFromObj (interp, objv[0], create_options, "options",
 			       0, &index) != TCL_OK)
 	{
-	  xfree (obj_name);
 	  result_ptr->flags |= GDBTK_IN_TCL_RESULT;
 	  return TCL_ERROR;
 	}
@@ -381,21 +380,19 @@ variable_create (Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[])
     }
 
   /* Create the variable */
-  var = varobj_create (obj_name, name, frame, how_specified);
+  var = varobj_create (obj_name.c_str (), name, frame, how_specified);
 
   if (var != NULL)
     {
       /* Install a command into the interpreter that represents this
          object */
-      install_variable (interp, obj_name);
-      Tcl_SetObjResult (interp, Tcl_NewStringObj (obj_name, -1));
+      install_variable (interp, obj_name.c_str ());
+      Tcl_SetObjResult (interp, Tcl_NewStringObj (obj_name.c_str (), -1));
       result_ptr->flags |= GDBTK_IN_TCL_RESULT;
 
-      xfree (obj_name);
       return TCL_OK;
     }
 
-  xfree (obj_name);
   return TCL_ERROR;
 }
 
