@@ -1327,9 +1327,7 @@ static int
 gdb_search (ClientData clientData, Tcl_Interp *interp,
 	    int objc, Tcl_Obj *CONST objv[])
 {
-  struct symbol_search *ss = NULL;
-  struct symbol_search *p;
-  struct cleanup *old_chain = NULL;
+  std::vector<symbol_search> ss;
   Tcl_Obj *CONST * switch_objv;
   int index, switch_objc, i, show_files = 0;
   enum search_domain space = ALL_DOMAIN;
@@ -1460,43 +1458,41 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
       switch_objv++;
     }
 
-  search_symbols (regexp, space, nfiles, files, &ss);
-  if (ss != NULL)
-    old_chain = make_cleanup_free_search_symbols (&ss);
+  ss = search_symbols (regexp, space, nfiles, files);
 
   Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
 
-  for (p = ss; p != NULL; p = p->next)
+  for (const symbol_search &p : ss)
     {
       Tcl_Obj *elem;
 
-      if (static_only && p->block != STATIC_BLOCK)
+      if (static_only && p.block != STATIC_BLOCK)
 	continue;
 
       /* Strip off some C++ special symbols, like RTTI and global
          constructors/destructors. */
-      if ((p->symbol != NULL
-	   && strncmp (SYMBOL_LINKAGE_NAME (p->symbol), "__tf", 4) != 0
-	   && strncmp (SYMBOL_LINKAGE_NAME (p->symbol), "_GLOBAL_", 8) != 0)
-	  || p->msymbol.minsym != NULL)
+      if ((p.symbol != NULL
+	   && strncmp (SYMBOL_LINKAGE_NAME (p.symbol), "__tf", 4) != 0
+	   && strncmp (SYMBOL_LINKAGE_NAME (p.symbol), "_GLOBAL_", 8) != 0)
+	  || p.msymbol.minsym != NULL)
 	{
 	  elem = Tcl_NewListObj (0, NULL);
 
-	  if (p->msymbol.minsym == NULL)
+	  if (p.msymbol.minsym == NULL)
 	    Tcl_ListObjAppendElement (interp, elem,
-				      Tcl_NewStringObj (SYMBOL_PRINT_NAME (p->symbol), -1));
+				      Tcl_NewStringObj (SYMBOL_PRINT_NAME (p.symbol), -1));
 	  else
 	    Tcl_ListObjAppendElement (interp, elem,
-				      Tcl_NewStringObj (MSYMBOL_PRINT_NAME (p->msymbol.minsym), -1));
+				      Tcl_NewStringObj (MSYMBOL_PRINT_NAME (p.msymbol.minsym), -1));
 
 	  if (show_files)
 	    {
-	      if (p->symbol != NULL &&
-                  symbol_symtab(p->symbol) != NULL &&
-                  symbol_symtab(p->symbol)->filename != NULL)
+	      if (p.symbol != NULL &&
+                  symbol_symtab(p.symbol) != NULL &&
+                  symbol_symtab(p.symbol)->filename != NULL)
 		{
 		  Tcl_ListObjAppendElement (interp, elem, Tcl_NewStringObj
-					    (symbol_symtab(p->symbol)->filename,
+					    (symbol_symtab(p.symbol)->filename,
                                             -1));
 		}
 	      else
@@ -1509,9 +1505,6 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
 	  Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, elem);
 	}
     }
-
-  if (ss != NULL)
-    do_cleanups (old_chain);
 
   return TCL_OK;
 }
