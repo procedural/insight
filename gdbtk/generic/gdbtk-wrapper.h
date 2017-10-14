@@ -23,26 +23,6 @@ Boston, MA 02110-1301, USA.  */
 #define GDBTK_WRAPPER_H
 #include "vec.h"
 
-/* Use this struct used to pass arguments to wrapper routines. We assume
-   (arbitrarily) that no gdb function takes more than ten arguments. */
-struct gdb_wrapper_arguments {
-
-  /* Pointer to some result from the gdb function call, if any */
-  union
-  {
-    int integer;
-    void *ptr;
-    const void *cstptr;
-  } result;
-
-  /* The list of arguments. */
-  union
-  {
-    void *ptr;
-    int integer;
-  } args[10];
-};
-
 /* FIXME: cagney/2002-01-04: GDB no longer uses or supplies the
    value_ptr typedef.  Provide one here to keep the Insight code
    immediatly happy.  */
@@ -61,10 +41,6 @@ extern gdb_result GDB_type_print (value_ptr val, char *varstring,
 extern gdb_result GDB_value_fetch_lazy (value_ptr value);
 extern gdb_result GDB_value_equal (value_ptr val1, value_ptr val2,
 				   int *result);
-/*
-extern gdb_result GDB_parse_exp_1 (char **stringptr, struct block *block,
-				   int comma, struct expression **result);
-*/
 extern gdb_result GDB_evaluate_type (struct expression *exp,
 				     value_ptr * result);
 extern gdb_result GDB_block_for_pc (CORE_ADDR pc, const struct block **result);

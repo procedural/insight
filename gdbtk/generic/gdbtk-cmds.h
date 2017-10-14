@@ -1,5 +1,5 @@
 /* Tcl/Tk command interface for Insight
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001-2017 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -20,19 +20,6 @@
 
 #if !defined(GDBTK_CMDS_H)
 #define GDBTK_CMDS_H 1
-
-/* This structure filled in gdbtk_call_wrapper and passed to
-   the wrapped call function.
-   It stores the command pointer and arguments
-   run in the wrapper function. */
-struct wrapped_call_args
-  {
-    Tcl_Interp *interp;
-    Tcl_ObjCmdProc *func;
-    int objc;
-    Tcl_Obj *CONST * objv;
-    int val;
-  };
 
 /* A generic call-wrapper to catch longjmps when calling C commands from
    tcl. ALL tcl commands should be wrapped in this call. */

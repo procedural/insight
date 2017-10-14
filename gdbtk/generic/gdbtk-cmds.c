@@ -226,7 +226,6 @@ static int gdb_disassemble_driver (CORE_ADDR low, CORE_ADDR high,
 							      disassemble_info
 							      *));
 static int perror_with_name_wrapper (PTR args);
-static int wrapped_call (PTR opaque_args);
 static int hex2bin (const char *hex, char *bin, int count);
 static int fromhex (int a);
 static int gdb_list_processes (ClientData,
@@ -357,7 +356,7 @@ Gdbtk_Init (Tcl_Interp *interp)
 }
 
 /* This routine acts as a top-level for all GDB code called by Tcl/Tk.  It
-   handles cleanups, and uses catch_errors to trap calls to return_to_top_level
+   handles cleanups, and uses TRY/CATCH to trap calls to return_to_top_level
    (usually via error).
    This is necessary in order to prevent a longjmp out of the bowels of Tk,
    possibly leaving things in a bad state.  Since this routine can be called
@@ -368,25 +367,26 @@ int
 gdbtk_call_wrapper (ClientData clientData, Tcl_Interp *interp,
 		    int objc, Tcl_Obj *CONST objv[])
 {
-  struct wrapped_call_args wrapped_args;
   gdbtk_result new_result, *old_result_ptr;
   int wrapped_returned_error = 0;
+  volatile int val;
 
   old_result_ptr = result_ptr;
   result_ptr = &new_result;
   result_ptr->obj_ptr = Tcl_NewObj ();
   result_ptr->flags = GDBTK_TO_RESULT;
 
-  wrapped_args.func = (Tcl_ObjCmdProc *) clientData;
-  wrapped_args.interp = interp;
-  wrapped_args.objc = objc;
-  wrapped_args.objv = objv;
-  wrapped_args.val = TCL_OK;
-
-  if (!catch_errors (wrapped_call, &wrapped_args, "", RETURN_MASK_ALL))
+  TRY
     {
-
-      wrapped_args.val = TCL_ERROR;	/* Flag an error for TCL */
+      val = ((Tcl_ObjCmdProc *) clientData) (clientData, interp, objc, objv);
+      /* If the call returned an error directly, then we don't
+	 want to reset the result.  */
+      wrapped_returned_error = val == TCL_ERROR;
+    }
+  CATCH (ex, RETURN_MASK_ALL)
+    {
+      exception_print (gdb_stderr, ex);
+      val = TCL_ERROR;	/* Flag an error for TCL */
 
       /* Make sure the timer interrupts are turned off.  */
       gdbtk_stop_timer ();
@@ -407,14 +407,8 @@ gdbtk_call_wrapper (ClientData clientData, Tcl_Interp *interp,
 
       running_now = 0;
       Tcl_Eval (interp, "gdbtk_tcl_idle");
-
     }
-  else
-    {
-      /* If the wrapped call returned an error directly, then we don't
-	 want to reset the result.  */
-      wrapped_returned_error = wrapped_args.val == TCL_ERROR;
-    }
+  END_CATCH
 
   /* do not suppress any errors -- a remote target could have errored */
   load_in_progress = 0;
@@ -441,22 +435,8 @@ gdbtk_call_wrapper (ClientData clientData, Tcl_Interp *interp,
   close_bfds ();
 #endif
 
-  return wrapped_args.val;
+  return val;
 }
-
-/*
- * This is the wrapper that is passed to catch_errors.
- */
-
-static int
-wrapped_call (PTR opaque_args)
-{
-  struct wrapped_call_args *args = (struct wrapped_call_args *) opaque_args;
-  args->val = (*args->func) ((ClientData) args->func, args->interp,
-			     args->objc, args->objv);
-  return 1;
-}
-
 
 /*
  * This section contains the commands that control execution.
@@ -2761,8 +2741,15 @@ gdb_loadfile (ClientData clientData, Tcl_Interp *interp, int objc,
 
   if (stat (file, &st) < 0)
     {
-      catch_errors (perror_with_name_wrapper, (void *) "gdbtk: get time stamp",
-		    "", RETURN_MASK_ALL);
+      TRY
+        {
+          perror_with_name_wrapper ((PTR) "gdbtk: get time stamp");
+        }
+      CATCH (ex, RETURN_MASK_ALL)
+        {
+          exception_print (gdb_stderr, ex);
+        }
+      END_CATCH
       return TCL_ERROR;
     }
 
