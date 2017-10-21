@@ -1,6 +1,6 @@
 diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
---- binutils-gdb.orig/gdb/event-loop.c	2016-08-10 12:24:37.824382196 +0200
-+++ binutils-gdb.new/gdb/event-loop.c	2016-08-10 12:28:24.562925857 +0200
+--- binutils-gdb.orig/gdb/event-loop.c	2017-10-21 17:24:43.370671512 +0100
++++ binutils-gdb.new/gdb/event-loop.c	2017-10-21 17:25:22.728752093 +0100
 @@ -37,13 +37,6 @@
  #include "observer.h"
  #include "top.h"
@@ -79,8 +79,8 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  
  /* Add a file handler/descriptor to the list of descriptors we are
 diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
---- binutils-gdb.orig/gdb/event-loop.h	2016-08-10 12:24:37.824382196 +0200
-+++ binutils-gdb.new/gdb/event-loop.h	2016-08-10 12:28:24.563925855 +0200
+--- binutils-gdb.orig/gdb/event-loop.h	2017-10-21 17:24:43.370671512 +0100
++++ binutils-gdb.new/gdb/event-loop.h	2017-10-21 17:25:22.729752120 +0100
 @@ -69,6 +69,12 @@
  
  #include "gdb_sys_time.h"
@@ -104,8 +104,8 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
  extern struct async_signal_handler *
    create_async_signal_handler (sig_handler_func *proc, 
 diff -Naurp binutils-gdb.orig/gdb/event-top.c binutils-gdb.new/gdb/event-top.c
---- binutils-gdb.orig/gdb/event-top.c	2016-08-10 11:04:45.000000000 +0200
-+++ binutils-gdb.new/gdb/event-top.c	2016-08-10 12:29:56.148738475 +0200
+--- binutils-gdb.orig/gdb/event-top.c	2017-10-08 15:03:35.839292259 +0100
++++ binutils-gdb.new/gdb/event-top.c	2017-10-21 17:25:22.730752148 +0100
 @@ -519,7 +519,7 @@ stdin_event_handler (int error, gdb_clie
  void
  ui_register_input_event_handler (struct ui *ui)
@@ -116,8 +116,8 @@ diff -Naurp binutils-gdb.orig/gdb/event-top.c binutils-gdb.new/gdb/event-top.c
  
  /* See top.h.  */
 diff -Naurp binutils-gdb.orig/gdb/linux-nat.c binutils-gdb.new/gdb/linux-nat.c
---- binutils-gdb.orig/gdb/linux-nat.c	2016-07-01 14:47:27.000000000 +0200
-+++ binutils-gdb.new/gdb/linux-nat.c	2016-08-10 12:28:24.565925851 +0200
+--- binutils-gdb.orig/gdb/linux-nat.c	2017-10-14 18:22:05.574711204 +0100
++++ binutils-gdb.new/gdb/linux-nat.c	2017-10-21 17:25:22.731752175 +0100
 @@ -4570,7 +4570,7 @@ linux_nat_async (struct target_ops *ops,
      {
        if (!linux_async_pipe (1))
@@ -128,8 +128,8 @@ diff -Naurp binutils-gdb.orig/gdb/linux-nat.c binutils-gdb.new/gdb/linux-nat.c
  	  /* There may be pending events to handle.  Tell the event loop
  	     to poll them.  */
 diff -Naurp binutils-gdb.orig/gdb/python/python.c binutils-gdb.new/gdb/python/python.c
---- binutils-gdb.orig/gdb/python/python.c	2016-07-15 18:54:55.000000000 +0200
-+++ binutils-gdb.new/gdb/python/python.c	2016-08-10 12:28:24.566925849 +0200
+--- binutils-gdb.orig/gdb/python/python.c	2017-10-14 18:22:05.581711273 +0100
++++ binutils-gdb.new/gdb/python/python.c	2017-10-21 17:25:22.732752203 +0100
 @@ -901,7 +901,7 @@ gdbpy_initialize_events (void)
  
    gdbpy_serial_event = make_serial_event ();
@@ -140,8 +140,8 @@ diff -Naurp binutils-gdb.orig/gdb/python/python.c binutils-gdb.new/gdb/python/py
    return 0;
  }
 diff -Naurp binutils-gdb.orig/gdb/ser-base.c binutils-gdb.new/gdb/ser-base.c
---- binutils-gdb.orig/gdb/ser-base.c	2016-04-14 12:05:21.000000000 +0200
-+++ binutils-gdb.new/gdb/ser-base.c	2016-08-10 12:28:24.566925849 +0200
+--- binutils-gdb.orig/gdb/ser-base.c	2017-10-21 17:22:13.722191948 +0100
++++ binutils-gdb.new/gdb/ser-base.c	2017-10-21 17:27:12.152405613 +0100
 @@ -82,7 +82,7 @@ reschedule (struct serial *scb)
  	case NOTHING_SCHEDULED:
  	  if (scb->bufcnt == 0)
@@ -160,9 +160,18 @@ diff -Naurp binutils-gdb.orig/gdb/ser-base.c binutils-gdb.new/gdb/ser-base.c
  	      next_state = FD_SCHEDULED;
  	    }
  	  else
+@@ -604,7 +604,7 @@ ser_base_async (struct serial *scb,
+       reschedule (scb);
+ 
+       if (scb->error_fd != -1)
+-	add_file_handler (scb->error_fd, handle_error_fd, scb);
++	add_file_handler (scb->error_fd, 0, handle_error_fd, scb);
+     }
+   else
+     {
 diff -Naurp binutils-gdb.orig/gdb/tui/tui-io.c binutils-gdb.new/gdb/tui/tui-io.c
---- binutils-gdb.orig/gdb/tui/tui-io.c	2016-07-15 18:54:55.000000000 +0200
-+++ binutils-gdb.new/gdb/tui/tui-io.c	2016-08-10 12:28:24.569925843 +0200
+--- binutils-gdb.orig/gdb/tui/tui-io.c	2017-04-30 17:15:04.025187504 +0100
++++ binutils-gdb.new/gdb/tui/tui-io.c	2017-10-21 17:25:22.732752203 +0100
 @@ -591,7 +591,7 @@ tui_initialize_io (void)
    (void) fcntl (tui_readline_pipe[0], F_SETFL, O_NDELAY);
  #endif
