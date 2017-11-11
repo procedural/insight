@@ -43,7 +43,7 @@
 #endif
 
 
-static void hack_disable_interpreter_exec (char *, int);
+static void hack_disable_interpreter_exec (const char *, int);
 void _initialize_gdbtk_interp (void);
 
 /* The gdb interpreter. */
@@ -70,11 +70,18 @@ public:
   ui_out *uiout;
 };
 
-/* See note in gdbtk_interpreter_init */
+/* See note in gdbtk_interp::init */
 static void
-hack_disable_interpreter_exec (char *args, int from_tty)
+hack_disable_interpreter_exec (const char *args, int from_tty)
 {
   error ("interpreter-exec not available when running Insight");
+}
+
+static void
+gdbtk_do_const_cfunc (struct cmd_list_element *c,
+                      const char *args, int from_tty)
+{
+  c->function.const_cfunc (args, from_tty);
 }
 
 void
@@ -96,7 +103,9 @@ gdbtk_interp::init (bool top_level)
 
   if (lookup_cmd_composition ("interpreter-exec", &alias, &prefix, &cmd))
     {
-      set_cmd_cfunc (cmd, hack_disable_interpreter_exec);
+      /* Change command processor function. */
+      cmd->func = gdbtk_do_const_cfunc;
+      cmd->function.const_cfunc = hack_disable_interpreter_exec;
     }
 }
 

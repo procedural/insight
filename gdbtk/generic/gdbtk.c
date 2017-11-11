@@ -113,7 +113,7 @@ void gdbtk_interactive (void);
 
 static void cleanup_init (void *ignore);
 
-static void tk_command (char *, int);
+static void tk_command (const char *, int);
 
 static int target_should_use_timer (struct target_ops *t);
 
@@ -121,7 +121,7 @@ int target_is_native (struct target_ops *t);
 
 int gdbtk_test (char *);
 
-static void view_command (char *, int);
+static void view_command (const char *, int);
 
 /* Handle for TCL interpreter */
 Tcl_Interp *gdbtk_tcl_interp = NULL;
@@ -1090,7 +1090,7 @@ _initialize_gdbtk (void)
 }
 
 static void
-tk_command (char *cmd, int from_tty)
+tk_command (const char *cmd, int from_tty)
 {
   int retval;
   char *result;
@@ -1116,7 +1116,7 @@ tk_command (char *cmd, int from_tty)
 }
 
 static void
-view_command (char *args, int from_tty)
+view_command (const char *args, int from_tty)
 {
   char *script;
   struct cleanup *old_chain;

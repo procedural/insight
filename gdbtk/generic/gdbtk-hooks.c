@@ -79,7 +79,7 @@ static void gdbtk_attach (void);
 static void gdbtk_detach (void);
 static void gdbtk_file_changed (const char *);
 static void gdbtk_exec_file_display (const char *);
-static void gdbtk_call_command (struct cmd_list_element *, char *, int);
+static void gdbtk_call_command (struct cmd_list_element *, const char *, int);
 static ptid_t gdbtk_wait (ptid_t, struct target_waitstatus *, int);
 int x_event (int);
 static int gdbtk_query (const char *, va_list);
@@ -568,7 +568,7 @@ gdbtk_readline_end (void)
 
 static void
 gdbtk_call_command (struct cmd_list_element *cmdblk,
-		    char *arg, int from_tty)
+		    const char *arg, int from_tty)
 {
   running_now = 0;
   if (cmdblk->theclass == class_run || cmdblk->theclass == class_trace)
