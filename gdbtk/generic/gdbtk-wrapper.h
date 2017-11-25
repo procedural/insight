@@ -21,12 +21,6 @@ Boston, MA 02110-1301, USA.  */
 
 #ifndef GDBTK_WRAPPER_H
 #define GDBTK_WRAPPER_H
-#include "vec.h"
-
-/* FIXME: cagney/2002-01-04: GDB no longer uses or supplies the
-   value_ptr typedef.  Provide one here to keep the Insight code
-   immediatly happy.  */
-typedef struct value *value_ptr;
 
 /* Whenever any gdb function wrapper is called, its return status is: */
 typedef enum gdb_wrapper_status { GDB_OK, GDB_ERROR } gdb_result;
@@ -34,39 +28,41 @@ typedef enum gdb_wrapper_status { GDB_OK, GDB_ERROR } gdb_result;
 /* This list of functions which have been wrapped. Please keep this list
    in alphabetical order, using "GDB_" to prefix the actual name of the
    function. */
-extern gdb_result GDB_evaluate_expression (struct expression *expr,
-					   value_ptr * val);
-extern gdb_result GDB_type_print (value_ptr val, char *varstring,
-				  struct ui_file *stream, int show);
-extern gdb_result GDB_value_fetch_lazy (value_ptr value);
-extern gdb_result GDB_value_equal (value_ptr val1, value_ptr val2,
-				   int *result);
-extern gdb_result GDB_evaluate_type (struct expression *exp,
-				     value_ptr * result);
 extern gdb_result GDB_block_for_pc (CORE_ADDR pc, const struct block **result);
 extern gdb_result GDB_block_innermost_frame (struct block *block,
 					     struct frame_info **result);
-extern gdb_result GDB_reinit_frame_cache (void);
-extern gdb_result GDB_value_ind (value_ptr val, value_ptr * rval);
-extern gdb_result GDB_value_slice (value_ptr val, int low, int num,
-				   value_ptr * rval);
-extern gdb_result GDB_value_coerce_array (value_ptr val, value_ptr * rval);
-extern gdb_result GDB_value_struct_elt (value_ptr * argp, value_ptr * args,
-					char *name, int *static_memfunc,
-					char *err, value_ptr * rval);
-extern gdb_result GDB_value_cast (struct type *type, value_ptr val,
-				  value_ptr * rval);
-gdb_result GDB_get_frame_block (struct frame_info *fi,
-				const struct block **rval);
-extern gdb_result GDB_get_prev_frame (struct frame_info *fi,
-				      struct frame_info **result);
-extern gdb_result GDB_get_next_frame (struct frame_info *fi,
-				      struct frame_info **result);
+extern gdb_result GDB_evaluate_expression (struct expression *expr,
+					   struct value **val);
+extern gdb_result GDB_evaluate_type (struct expression *exp,
+				     struct value **result);
 extern gdb_result GDB_find_relative_frame (struct frame_info *fi,
 					   int *start,
 					   struct frame_info **result);
 extern gdb_result GDB_get_current_frame (struct frame_info **result);
+extern gdb_result GDB_get_frame_block (struct frame_info *fi,
+				       const struct block **rval);
+extern gdb_result GDB_get_next_frame (struct frame_info *fi,
+				      struct frame_info **result);
+extern gdb_result GDB_get_prev_frame (struct frame_info *fi,
+				      struct frame_info **result);
+extern gdb_result GDB_reinit_frame_cache (void);
+extern gdb_result GDB_type_print (struct value *val, char *varstring,
+				  struct ui_file *stream, int show);
+extern gdb_result GDB_value_cast (struct type *type, struct value *val,
+				  struct value **rval);
+extern gdb_result GDB_value_coerce_array (struct value *val,
+					  struct value **rval);
+extern gdb_result GDB_value_equal (struct value *val1, struct value *val2,
+				   int *result);
+extern gdb_result GDB_value_fetch_lazy (struct value *value);
+extern gdb_result GDB_value_ind (struct value *val, struct value **rval);
+extern gdb_result GDB_value_slice (struct value *val, int low, int num,
+				   struct value **rval);
+extern gdb_result GDB_value_struct_elt (struct value **argp,
+					struct value **args,
+					char *name, int *static_memfunc,
+					char *err, struct value **rval);
 extern gdb_result GDB_varobj_update (struct varobj **varp, int xplicit,
-				     VEC (varobj_update_result) **changes);
-#endif /* GDBTK_WRAPPER_H */
+		             std::vector<varobj_update_result> &changes);
 
+#endif /* GDBTK_WRAPPER_H */

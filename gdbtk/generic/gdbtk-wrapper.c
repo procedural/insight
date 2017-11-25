@@ -28,58 +28,7 @@
 #include "valprint.h"
 #include "gdbtk-wrapper.h"
 
-/*
- * Wrapper functions exported to the world
- */
 
-gdb_result GDB_value_fetch_lazy (value_ptr);
-
-gdb_result GDB_evaluate_expression (struct expression *, value_ptr *);
-
-gdb_result GDB_type_print (value_ptr, char *, struct ui_file *, int);
-
-gdb_result GDB_value_equal (value_ptr, value_ptr, int *);
-
-gdb_result GDB_evaluate_type (struct expression *exp, value_ptr * result);
-
-gdb_result GDB_block_for_pc (CORE_ADDR pc, const struct block **result);
-
-gdb_result GDB_block_innermost_frame (struct block *block,
-				      struct frame_info **result);
-
-gdb_result GDB_reinit_frame_cache (void);
-
-gdb_result GDB_value_ind (value_ptr val, value_ptr * rval);
-
-gdb_result GDB_value_slice (value_ptr val, int low, int num,
-			    value_ptr * rval);
-
-gdb_result GDB_value_coerce_array (value_ptr val, value_ptr * rval);
-
-gdb_result GDB_value_struct_elt (value_ptr * argp, value_ptr * args,
-				 char *name, int *static_memfunc,
-				 char *err, value_ptr * rval);
-
-gdb_result GDB_value_cast (struct type *type, value_ptr val,
-			   value_ptr * rval);
-
-gdb_result GDB_get_frame_block (struct frame_info *fi,
-				const struct block **rval);
-
-gdb_result GDB_get_prev_frame (struct frame_info *fi,
-			       struct frame_info **result);
-
-gdb_result GDB_get_next_frame (struct frame_info *fi,
-			       struct frame_info **result);
-
-gdb_result GDB_find_relative_frame (struct frame_info *fi,
-				    int *start, struct frame_info **result);
-
-gdb_result GDB_get_current_frame (struct frame_info **result);
-
-gdb_result GDB_varobj_update (struct varobj **varp, int xplicit,
-			      VEC (varobj_update_result) **changes);
-
 /* Error catcher macro. */
 #define GDBTK_CATCH_ERRORS(statement)					\
 		TRY							\
@@ -96,37 +45,6 @@ gdb_result GDB_varobj_update (struct varobj **varp, int xplicit,
 
 
 gdb_result
-GDB_type_print (value_ptr val, char *varstring,
-		struct ui_file *stream, int show)
-{
-  GDBTK_CATCH_ERRORS (type_print (value_type (val), varstring, stream, show));
-}
-
-gdb_result
-GDB_value_fetch_lazy (value_ptr value)
-{
-  GDBTK_CATCH_ERRORS (value_fetch_lazy (value));
-}
-
-gdb_result
-GDB_evaluate_expression (struct expression *exp, value_ptr *value)
-{
-  GDBTK_CATCH_ERRORS (*value = (value_ptr) evaluate_expression (exp));
-}
-
-gdb_result
-GDB_value_equal (value_ptr val1, value_ptr val2, int *result)
-{
-  GDBTK_CATCH_ERRORS (*result = value_equal (val1, val2));
-}
-
-gdb_result
-GDB_evaluate_type (struct expression *exp, value_ptr *result)
-{
-  GDBTK_CATCH_ERRORS (*result = (value_ptr) evaluate_type (exp));
-}
-
-gdb_result
 GDB_block_for_pc (CORE_ADDR pc, const struct block **result)
 {
   GDBTK_CATCH_ERRORS (*result = block_for_pc (pc));
@@ -139,64 +57,15 @@ GDB_block_innermost_frame (struct block *block, struct frame_info **result)
 }
 
 gdb_result
-GDB_reinit_frame_cache (void)
+GDB_evaluate_expression (struct expression *exp, struct value **value)
 {
-  GDBTK_CATCH_ERRORS (reinit_frame_cache ());
+  GDBTK_CATCH_ERRORS (*value = (struct value *) evaluate_expression (exp));
 }
 
 gdb_result
-GDB_value_ind (value_ptr val, value_ptr *rval)
+GDB_evaluate_type (struct expression *exp, struct value **result)
 {
-  GDBTK_CATCH_ERRORS (*rval = (value_ptr) value_ind (val));
-}
-
-gdb_result
-GDB_value_slice (value_ptr val, int low, int num, value_ptr *rval)
-{
-  GDBTK_CATCH_ERRORS (*rval = (value_ptr) value_slice (val, low, num));
-}
-
-gdb_result
-GDB_value_coerce_array (value_ptr val, value_ptr *rval)
-{
-  GDBTK_CATCH_ERRORS (*rval = (value_ptr) value_coerce_array (val));
-}
-
-gdb_result
-GDB_value_struct_elt (value_ptr *argp,
-		      value_ptr *args,
-		      char *name,
-		      int *static_memfunc,
-		      char *err,
-		      value_ptr *rval)
-{
-  GDBTK_CATCH_ERRORS (*rval = (value_ptr) value_struct_elt (argp, args, name,
-                                                            static_memfunc,
-                                                            err));
-}
-
-gdb_result
-GDB_value_cast (struct type *type, value_ptr val, value_ptr *rval)
-{
-  GDBTK_CATCH_ERRORS (*rval = (value_ptr) value_cast (type, val));
-}
-
-gdb_result
-GDB_get_frame_block (struct frame_info *fi, const struct block **rval)
-{
-  GDBTK_CATCH_ERRORS (*rval = get_frame_block (fi, NULL));
-}
-
-gdb_result
-GDB_get_prev_frame (struct frame_info *fi, struct frame_info **result)
-{
-  GDBTK_CATCH_ERRORS (*result = get_prev_frame (fi));
-}
-
-gdb_result
-GDB_get_next_frame (struct frame_info *fi, struct frame_info **result)
-{
-  GDBTK_CATCH_ERRORS (*result = get_next_frame (fi));
+  GDBTK_CATCH_ERRORS (*result = (struct value *) evaluate_type (exp));
 }
 
 gdb_result
@@ -213,8 +82,89 @@ GDB_get_current_frame (struct frame_info **result)
 }
 
 gdb_result
-GDB_varobj_update (struct varobj **varp, int xplicit,
-		   VEC (varobj_update_result) **changes)
+GDB_get_frame_block (struct frame_info *fi, const struct block **rval)
 {
-  GDBTK_CATCH_ERRORS (*changes = varobj_update (varp, xplicit));
+  GDBTK_CATCH_ERRORS (*rval = get_frame_block (fi, NULL));
+}
+
+gdb_result
+GDB_get_next_frame (struct frame_info *fi, struct frame_info **result)
+{
+  GDBTK_CATCH_ERRORS (*result = get_next_frame (fi));
+}
+
+gdb_result
+GDB_get_prev_frame (struct frame_info *fi, struct frame_info **result)
+{
+  GDBTK_CATCH_ERRORS (*result = get_prev_frame (fi));
+}
+
+gdb_result
+GDB_reinit_frame_cache (void)
+{
+  GDBTK_CATCH_ERRORS (reinit_frame_cache ());
+}
+
+gdb_result
+GDB_type_print (struct value *val, char *varstring,
+		struct ui_file *stream, int show)
+{
+  GDBTK_CATCH_ERRORS (type_print (value_type (val), varstring, stream, show));
+}
+
+gdb_result
+GDB_value_cast (struct type *type, struct value *val, struct value **rval)
+{
+  GDBTK_CATCH_ERRORS (*rval = (struct value *) value_cast (type, val));
+}
+
+gdb_result
+GDB_value_coerce_array (struct value *val, struct value **rval)
+{
+  GDBTK_CATCH_ERRORS (*rval = (struct value *) value_coerce_array (val));
+}
+
+gdb_result
+GDB_value_equal (struct value *val1, struct value *val2, int *result)
+{
+  GDBTK_CATCH_ERRORS (*result = value_equal (val1, val2));
+}
+
+gdb_result
+GDB_value_fetch_lazy (struct value *value)
+{
+  GDBTK_CATCH_ERRORS (value_fetch_lazy (value));
+}
+
+gdb_result
+GDB_value_ind (struct value *val, struct value **rval)
+{
+  GDBTK_CATCH_ERRORS (*rval = (struct value *) value_ind (val));
+}
+
+gdb_result
+GDB_value_slice (struct value *val, int low, int num, struct value **rval)
+{
+  GDBTK_CATCH_ERRORS (*rval = (struct value *) value_slice (val, low, num));
+}
+
+gdb_result
+GDB_value_struct_elt (struct value **argp,
+		      struct value **args,
+		      char *name,
+		      int *static_memfunc,
+		      char *err,
+		      struct value **rval)
+{
+  GDBTK_CATCH_ERRORS (*rval = (struct value *) value_struct_elt (argp, args,
+                                                                 name,
+                                                                 static_memfunc,
+                                                                 err));
+}
+
+gdb_result
+GDB_varobj_update (struct varobj **varp, int xplicit,
+		   std::vector<varobj_update_result> &changes)
+{
+  GDBTK_CATCH_ERRORS (changes = varobj_update (varp, xplicit));
 }

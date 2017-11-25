@@ -673,9 +673,8 @@ gdb_eval (ClientData clientData, Tcl_Interp *interp,
 {
   expression_up expr;
   int format = 0;
-  value_ptr val;
+  struct value *val;
   string_file stb;
-  long dummy;
   struct value_print_options opts;
 
   if (objc != 2 && objc != 3)
@@ -2444,7 +2443,6 @@ static int
 gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST objv[])
 {
-  long dummy;
   char index[20];
   CORE_ADDR addr;
   int nbytes, rnum, bpr;

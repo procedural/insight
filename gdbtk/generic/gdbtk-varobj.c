@@ -401,16 +401,15 @@ static void
 variable_delete_tcl (Tcl_Interp *interp, struct varobj *var,
                      int only_children_p)
 {
-  int i;
+  std::vector<varobj *>::iterator i;
 
   /* Delete children. */
-  for (i = 0; i < VEC_length (varobj_p, var->children); i++)
+  for (i = var->children.begin (); i != var->children.end (); i++)
     {
-      varobj_p child = VEC_index (varobj_p, var->children, i);
+      varobj *child = *i;
 
-      if (!child)
-        continue;
-      variable_delete_tcl (interp, child, 0);
+      if (child)
+        variable_delete_tcl (interp, child, 0);
     }
 
   if (only_children_p)
@@ -434,26 +433,24 @@ variable_delete (Tcl_Interp *interp, struct varobj *var,
 static Tcl_Obj *
 variable_children (Tcl_Interp *interp, struct varobj *var)
 {
-  Tcl_Obj *list;
-  VEC(varobj_p) *children;
-  struct varobj *child;
+  Tcl_Obj *list = Tcl_NewListObj (0, NULL);
+  int from = -1;
+  int to = -1;
+  const std::vector<varobj *> &children =
+                                        varobj_list_children (var, &from, &to);
   const char *childname;
-  int ix, from, to;
+  int ix;
 
-  list = Tcl_NewListObj (0, NULL);
-
-  from = -1;
-  to = -1;
-
-  children = varobj_list_children (var, &from, &to);
-
-  for (ix = from; ix < to && VEC_iterate (varobj_p, children, ix, child); ++ix)
+  if (from >= 0)
     {
-      childname = varobj_get_objname (child);
-      /* Add child to result list and install the Tcl command for it. */
-      Tcl_ListObjAppendElement (NULL, list,
-				Tcl_NewStringObj (childname, -1));
-      install_variable (interp, childname);
+      for (ix = from; ix < to; ++ix)
+        {
+          childname = varobj_get_objname (children[ix]);
+          /* Add child to result list and install the Tcl command for it. */
+          Tcl_ListObjAppendElement (NULL, list,
+				    Tcl_NewStringObj (childname, -1));
+          install_variable (interp, childname);
+        }
     }
 
   return list;
@@ -467,14 +464,14 @@ variable_update (Tcl_Interp *interp, struct varobj **var)
 {
   int i;
   Tcl_Obj *changed;
-  VEC (varobj_update_result) *changes;
-  varobj_update_result *r;
+  std::vector<varobj_update_result> changes;
+  std::vector<varobj_update_result>::iterator r;
 
-  if (GDB_varobj_update (var, 1, &changes) != GDB_OK)
+  if (GDB_varobj_update (var, 1, changes) != GDB_OK)
     return Tcl_NewStringObj ("-1", -1);
 
   changed = Tcl_NewListObj (0, NULL);
-  for (i = 0; VEC_iterate (varobj_update_result, changes, i, r); ++i)
+  for (r = changes.begin (); r != changes.end (); r++)
     {
       switch (r->status)
 	{
