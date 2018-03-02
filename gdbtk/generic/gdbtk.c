@@ -1,5 +1,5 @@
 /* Startup code for Insight
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
 
@@ -512,8 +512,8 @@ gdbtk_notifier_create_file_handler (int fd, int tclmask, Tcl_FileProc *proc,
   data->clientData = clientData;
   data->next = gdbtk_notifier_data.filelist;
   gdbtk_notifier_data.filelist = data;
-  add_file_handler (fd, gdbmask,
-                    gdbtk_notifier_file_proc, (gdb_client_data) data);
+  add_file_handler_with_mode (fd, gdbmask,
+                              gdbtk_notifier_file_proc, (gdb_client_data) data);
 }
 
 /* Tcl notifier procedure to initialize the notifier. */
