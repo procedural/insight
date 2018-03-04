@@ -246,7 +246,8 @@ TclDebug (char level, const char *fmt,...)
 }
 
 /* Tcl notifier using gdb event loop as external event loop. */
-/* Multithreading not supported: both notifiers must run in the same thread. */
+/* Multithreading not supported: both event loops must run in the
+   same thread. */
 
 /* File handler Tcl event. */
 typedef struct
@@ -269,60 +270,79 @@ struct _gdbtk_notifier_file_data
   };
 
 /* Notifier data. */
+#define GDBTK_NOTIFIER_IN_TCL           (1 << 0) /* Currently executing tcl. */
+#define GDBTK_NOTIFIER_REDISPATCH	(1 << 1) /* Request tcl redispatch. */
 
-static struct
+typedef struct
   {
     gdbtk_notifier_file_data *filelist; /* List of gdbtk_notifier_file_data. */
     struct async_event_handler *schedule; /* Gdb event to tcl event loop. */
-    int timer_id;                       /* Active timer or 0. */
     int service_mode;                   /* Current service mode. */
-    int in_tcl;                         /* Tcl currently executing. */
-    int redispatch;                     /* Tcl needs redispatching. */
+    unsigned int flags;                 /* Various flags. */
   }
-gdbtk_notifier_data;
+gdbtk_notifier_state;
+
+static Tcl_ThreadDataKey        thrdatakey;
 
 
-/* Callback from gdb event loop to process a Tcl event. */
-static void
-gdbtk_notifier_schedule_proc (gdb_client_data data)
+static gdbtk_notifier_state *
+notifier_state (void)
 {
-  (void) data;
+  gdbtk_notifier_state *notif;
 
-  /* `in_tcl' avoids recursively calling Tcl_DoOneEvent. */
-  if (gdbtk_notifier_data.in_tcl)       /* Tcl currently executing ? */
-    gdbtk_notifier_data.redispatch = 1; /* Yes, defer action. */
-  else
-    {
-      gdbtk_notifier_data.in_tcl = 1;
-      if (Tcl_DoOneEvent (TCL_DONT_WAIT) > 0)
-        gdbtk_notifier_data.redispatch = 1;     /* May be more to service. */
-      gdbtk_notifier_data.in_tcl = 0;
+  notif = (gdbtk_notifier_state *) Tcl_GetThreadData (&thrdatakey,
+                                                      sizeof *notif);
+  return notif;
+}
 
-      /* If Tcl activation has been requested since entered, reactivate
-         immediately. */
-      if (gdbtk_notifier_data.redispatch)
-        {
-          gdbtk_notifier_data.redispatch = 0;
-          mark_async_event_handler (gdbtk_notifier_data.schedule);
-        }
-    }
+/* Defer tcl action if tcl is already executing. */
+static int
+gdbtk_notifier_defer (gdbtk_notifier_state *notif)
+{
+  if (!(notif->flags & GDBTK_NOTIFIER_IN_TCL))
+    return 0;
+  notif->flags |= GDBTK_NOTIFIER_REDISPATCH;
+  return 1;
 }
 
 /* Request execution of Tcl_DoOneEvent. */
 static void
 gdbtk_notifier_reschedule_tcl (void)
 {
-  if (gdbtk_notifier_data.in_tcl)       /* If Tcl currently executing. */
-    gdbtk_notifier_data.redispatch = 1; /* Defer re-entry. */
-  else
-    mark_async_event_handler (gdbtk_notifier_data.schedule);    /* Activate. */
+  gdbtk_notifier_state *notif = notifier_state ();
+
+  notif->flags &= ~GDBTK_NOTIFIER_REDISPATCH;
+  if (!gdbtk_notifier_defer (notif))
+    mark_async_event_handler (notif->schedule);         /* Activate. */
+}
+
+/* Callback from gdb event loop to process a Tcl event. */
+static void
+gdbtk_notifier_schedule_proc (gdb_client_data clientData)
+{
+  gdbtk_notifier_state *notif = (gdbtk_notifier_state *) clientData;
+
+  /* Avoid recursively calling Tcl_DoOneEvent. */
+  if (!gdbtk_notifier_defer (notif))
+    {
+      notif->flags |= GDBTK_NOTIFIER_IN_TCL;
+      if (Tcl_DoOneEvent (TCL_DONT_WAIT) > 0)
+        notif->flags |= GDBTK_NOTIFIER_REDISPATCH;      /* Might be more. */
+      notif->flags &= ~GDBTK_NOTIFIER_IN_TCL;
+
+      /* If Tcl activation has been requested since entered, reactivate
+         immediately. */
+      if (notif->flags & GDBTK_NOTIFIER_REDISPATCH)
+        gdbtk_notifier_reschedule_tcl ();
+    }
 }
 
 /* Search a file handler data structure by its file descriptor. */
 static gdbtk_notifier_file_data **
 gdbtk_notifier_get_file_data (int fd)
 {
-  gdbtk_notifier_file_data **dataptr = &gdbtk_notifier_data.filelist;
+  gdbtk_notifier_state *notif = notifier_state ();
+  gdbtk_notifier_file_data **dataptr = &notif->filelist;
   gdbtk_notifier_file_data *data;
 
   for (; (data = *dataptr); dataptr = &data->next)
@@ -356,7 +376,7 @@ gdbtk_notifier_file_handler_event_proc (Tcl_Event *evptr, int flags)
   return 1;     /* Event processed. */
 }
 
-/* File handler bdg event comes here. */
+/* File handler gdb event comes here. */
 static void
 gdbtk_notifier_file_proc (int error, gdb_client_data clientData)
 {
@@ -404,32 +424,12 @@ gdbtk_notifier_file_proc (int error, gdb_client_data clientData)
     }
 }
 
-/* Timer has elapsed. */
-static void
-gdbtk_notifier_timeout (gdb_client_data clientData)
-{
-  gdbtk_notifier_data.timer_id = 0;     /* Timer has been deleted. */
-  Tcl_ServiceAll ();                    /* Service pending Tcl events. */
-}
-
-/* Tcl notifier procedure to start a timer. */
+/* Tcl notifier procedure to start an event servicing timer.
+ * Not needed in our context: tcl event rescheduling is explicitly handled. */
 static void
 gdbtk_notifier_set_timer (CONST86 Tcl_Time *timeptr)
 {
-  if (gdbtk_notifier_data.timer_id)
-    {
-      /* Cancel previous timer. */
-      delete_timer (gdbtk_notifier_data.timer_id);
-      gdbtk_notifier_data.timer_id = 0;
-    }
-  if (timeptr)
-    {
-      int msec = timeptr->sec * 1000 + (timeptr->usec + 500) / 1000;
-
-      gdbtk_notifier_data.timer_id = create_timer (msec,
-                                                   gdbtk_notifier_timeout,
-                                                   (gdb_client_data) NULL);
-    }
+  (void) timeptr;
 }
 
 /* Tcl notifier procedure to wait for an event.
@@ -437,33 +437,11 @@ gdbtk_notifier_set_timer (CONST86 Tcl_Time *timeptr)
 static int
 gdbtk_notifier_wait_for_event (CONST86 Tcl_Time *timeptr)
 {
-  int i;
-  struct timeval expiration;
-  struct timeval now;
-  struct timeval *tvp = NULL;
+  int msec = -1;
 
   if (timeptr)
-    {
-      if (gdbtk_notifier_data.timer_id)
-        {
-          /* Delete active timer. */
-          delete_timer (gdbtk_notifier_data.timer_id);
-          gdbtk_notifier_data.timer_id = 0;
-        }
-
-      /* Compute the absolute timeout time. */
-      gettimeofday (&now, NULL);
-      expiration.tv_sec = now.tv_sec + timeptr->sec;
-      expiration.tv_usec = now.tv_usec + timeptr->usec;
-      if (expiration.tv_usec >= 1000000)
-        {
-          expiration.tv_usec -= 1000000;
-          expiration.tv_sec++;
-        }
-      tvp = &expiration;
-    }
-  i = gdb_do_one_event (tvp);
-  return i;
+    msec = timeptr->sec * 1000 + (timeptr->usec + 500) / 1000;
+  return gdb_do_one_event (msec);
 }
 
 /* Tcl notifier procedure to delete a file handler.
@@ -489,6 +467,7 @@ static void
 gdbtk_notifier_create_file_handler (int fd, int tclmask, Tcl_FileProc *proc,
                                     ClientData clientData)
 {
+  gdbtk_notifier_state *notif = notifier_state ();
   gdbtk_notifier_file_data *data;
   int gdbmask = 0;
 
@@ -504,14 +483,14 @@ gdbtk_notifier_create_file_handler (int fd, int tclmask, Tcl_FileProc *proc,
   if (tclmask & TCL_EXCEPTION)
     gdbmask |= GDB_EXCEPTION;
 
-  /* Allocate and populate our private data structure, the submit to gdb. */
+  /* Allocate and populate our private data structure, then submit to gdb. */
   data = (gdbtk_notifier_file_data *) xcalloc (1, sizeof *data);
   data->fd = fd;
-  data->proc = proc;
   data->mask = tclmask;
+  data->proc = proc;
   data->clientData = clientData;
-  data->next = gdbtk_notifier_data.filelist;
-  gdbtk_notifier_data.filelist = data;
+  data->next = notif->filelist;
+  notif->filelist = data;
   add_file_handler_with_mode (fd, gdbmask,
                               gdbtk_notifier_file_proc, (gdb_client_data) data);
 }
@@ -520,16 +499,29 @@ gdbtk_notifier_create_file_handler (int fd, int tclmask, Tcl_FileProc *proc,
 static ClientData
 gdbtk_notifier_initialize (void)
 {
+  gdbtk_notifier_state *notif = notifier_state ();
+
+  /* Create the gdb event propagating gdb event loop to Tcl. */
+  notif->schedule =
+                create_async_event_handler (gdbtk_notifier_schedule_proc,
+                (gdb_client_data) notif);
   Tcl_SetServiceMode (TCL_SERVICE_ALL); /* Needs event servicing. */
-  return (ClientData) NULL;
+  return (ClientData) notif;
 }
 
 /* Tcl notifier procedure to terminate the notifier. */
 static void
 gdbtk_notifier_finalize (ClientData clientData)
 {
-  (void) clientData;
-  ;                                     /* Nothing to do */
+  gdbtk_notifier_state *notif = (gdbtk_notifier_state *) clientData;
+
+  gdbtk_notifier_set_timer (NULL);      /* Cancel timer, if some. */
+  if (notif->schedule)          /* Release the reschedule gdb event. */
+    delete_async_event_handler (&notif->schedule);
+  /* Release all file handlers. */
+  while (notif->filelist)
+    gdbtk_notifier_delete_file_handler (notif->filelist->fd);
+  notif->flags = 0;
 }
 
 /* Tcl notifier procedure to interrupt the event waiting.
@@ -538,6 +530,7 @@ gdbtk_notifier_finalize (ClientData clientData)
 static void
 gdbtk_notifier_alert (ClientData clientData)
 {
+  (void) clientData;
   gdbtk_notifier_reschedule_tcl ();
 }
 
@@ -545,7 +538,9 @@ gdbtk_notifier_alert (ClientData clientData)
 static void
 gdbtk_notifier_service_mode_hook (int mode)
 {
-  gdbtk_notifier_data.service_mode = mode;
+  gdbtk_notifier_state *notif = notifier_state ();
+
+  notif->service_mode = mode;
 }
 
 /* Notifier definition structure. */
@@ -566,11 +561,6 @@ static Tcl_NotifierProcs gdbtk_notifier_procs =
 static void
 gdbtk_install_notifier (void)
 {
-  memset ((char *) &gdbtk_notifier_data, 0, sizeof gdbtk_notifier_data);
-  /* Create the gdb event propagating gdb event loop to Tcl. */
-  gdbtk_notifier_data.schedule =
-                create_async_event_handler (gdbtk_notifier_schedule_proc,
-                (gdb_client_data) NULL);
   Tcl_SetNotifier (&gdbtk_notifier_procs);
 }
 
@@ -582,13 +572,6 @@ gdbtk_uninstall_notifier (void)
 
   memset ((char *) &noprocs, 0, sizeof noprocs);
   Tcl_SetNotifier (&noprocs);
-
-  gdbtk_notifier_set_timer (NULL);      /* Cancel timer, if some. */
-  if (gdbtk_notifier_data.schedule)     /* Release the reschedule gdb event. */
-    delete_async_event_handler (&gdbtk_notifier_data.schedule);
-  /* Release all file handlers. */
-  while (gdbtk_notifier_data.filelist)
-    gdbtk_notifier_delete_file_handler (gdbtk_notifier_data.filelist->fd);
 }
 
 

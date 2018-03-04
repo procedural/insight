@@ -1,0 +1,117 @@
+diff -Naurp binutils-gdb/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
+--- binutils-gdb/gdb/event-loop.c	2018-01-04 17:43:15.658599234 +0100
++++ binutils-gdb.new/gdb/event-loop.c	2018-03-02 18:58:15.817927534 +0100
+@@ -286,17 +286,28 @@ initialize_async_signal_handlers (void)
+ 		    async_signals_handler, NULL);
+ }
+ 
++/* Timer function to cancel gdb_wait_for_event.
++   Should normally never be called. */
++static void
++cancel_wait (gdb_client_data clientdata)
++{
++  int * idp = (int *) clientdata;
++
++  *idp = 0; /* Timer has already been deleted. */
++}
++
+ /* Process one high level event.  If nothing is ready at this time,
+    wait for something to happen (via gdb_wait_for_event), then process
+    it.  Returns >0 if something was done otherwise returns <0 (this
+    can happen if there are no event sources to wait for).  */
+ 
+ int
+-gdb_do_one_event (void)
++gdb_do_one_event (int mstimeout)
+ {
+   static int event_source_head = 0;
+   const int number_of_sources = 3;
+   int current = 0;
++  int res = 0;
+ 
+   /* First let's see if there are any asynchronous signal handlers
+      that are ready.  These would be the result of invoking any of the
+@@ -308,8 +319,6 @@ gdb_do_one_event (void)
+      round-robin fashion.  */
+   for (current = 0; current < number_of_sources; current++)
+     {
+-      int res;
+-
+       switch (event_source_head)
+ 	{
+ 	case 0:
+@@ -342,14 +351,26 @@ gdb_do_one_event (void)
+   /* Block waiting for a new event.  If gdb_wait_for_event returns -1,
+      we should get out because this means that there are no event
+      sources left.  This will make the event loop stop, and the
+-     application exit.  */
++     application exit.
++     If a timeout has been given, a new timer is set accordingly
++     to abort event wait.  It is deleted upon gdb_wait_for_event
++     termination and thus should never be triggered.
++     When the timeout is reached, events are not monitored again:
++     they already have been checked in the loop above. */
++
++  if (mstimeout != 0)
++    {
++      int timerid = 0;
+ 
+-  if (gdb_wait_for_event (1) < 0)
+-    return -1;
++      if (mstimeout > 0)
++        timerid = create_timer (mstimeout,
++                                cancel_wait, (gdb_client_data) &timerid);
++      res = gdb_wait_for_event (1);
++      if (timerid)
++        delete_timer (timerid);
++    }
+ 
+-  /* If gdb_wait_for_event has returned 1, it means that one event has
+-     been handled.  We break out of the loop.  */
+-  return 1;
++  return res;
+ }
+ 
+ /* Start up the event loop.  This is the entry point to the event loop
+@@ -368,7 +389,7 @@ start_event_loop (void)
+ 
+       TRY
+ 	{
+-	  result = gdb_do_one_event ();
++	  result = gdb_do_one_event (-1);
+ 	}
+       CATCH (ex, RETURN_MASK_ALL)
+ 	{
+diff -Naurp binutils-gdb/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
+--- binutils-gdb/gdb/event-loop.h	2018-01-04 17:43:15.658599234 +0100
++++ binutils-gdb.new/gdb/event-loop.h	2018-03-02 18:43:20.649326211 +0100
+@@ -78,7 +78,7 @@ typedef void (timer_handler_func) (gdb_c
+ /* Exported functions from event-loop.c */
+ 
+ extern void start_event_loop (void);
+-extern int gdb_do_one_event (void);
++extern int gdb_do_one_event (int mstimeout);
+ extern void delete_file_handler (int fd);
+ extern void add_file_handler (int fd, handler_func *proc, 
+ 			      gdb_client_data client_data);
+diff -Naurp binutils-gdb/gdb/top.c binutils-gdb.new/gdb/top.c
+--- binutils-gdb/gdb/top.c	2018-01-26 13:46:47.638247027 +0100
++++ binutils-gdb.new/gdb/top.c	2018-03-02 18:44:22.022926038 +0100
+@@ -500,7 +500,7 @@ wait_sync_command_done (void)
+   scoped_restore save_ui = make_scoped_restore (&current_ui);
+   struct ui *ui = current_ui;
+ 
+-  while (gdb_do_one_event () >= 0)
++  while (gdb_do_one_event (-1) >= 0)
+     if (ui->prompt_state != PROMPT_BLOCKED)
+       break;
+ }
+@@ -1000,7 +1000,7 @@ gdb_readline_wrapper (const char *prompt
+     (*after_char_processing_hook) ();
+   gdb_assert (after_char_processing_hook == NULL);
+ 
+-  while (gdb_do_one_event () >= 0)
++  while (gdb_do_one_event (-1) >= 0)
+     if (gdb_readline_wrapper_done)
+       break;
+ 

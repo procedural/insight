@@ -1,6 +1,6 @@
 /* Startup code for Insight.
 
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
 
@@ -585,7 +585,7 @@ gdbtk_call_command (struct cmd_list_element *cmdblk,
          monitoring gdb events. */
       while (!ptid_equal (inferior_ptid, null_ptid) &&
              is_running (inferior_ptid))
-        gdb_do_one_event (NULL);
+        gdb_do_one_event (-1);
 
       /* Emulate trace start/stop hook. */
       if (tracerunning != current_trace_status ()->running)

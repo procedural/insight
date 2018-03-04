@@ -1,6 +1,6 @@
 diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
---- binutils_gdb.orig/gdb/event-loop.c	2018-03-02 17:22:14.323187193 +0100
-+++ binutils_gdb.new/gdb/event-loop.c	2018-03-02 17:24:10.738320618 +0100
+--- binutils-gdb.orig/gdb/event-loop.c	2018-03-04 02:53:18.489945815 +0100
++++ binutils-gdb.new/gdb/event-loop.c	2018-03-04 02:55:37.714311378 +0100
 @@ -37,13 +37,6 @@
  #include "observer.h"
  #include "top.h"
@@ -15,7 +15,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  /* Data point to pass to the event handler.  */
  typedef union event_data
  {
-@@ -446,11 +439,16 @@ start_event_loop (void)
+@@ -431,11 +424,16 @@ start_event_loop (void)
     doesn't have to know implementation details about the use of poll
     vs. select.  */
  void
@@ -33,7 +33,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  
    if (use_poll)
      {
-@@ -460,8 +458,16 @@ add_file_handler (int fd, handler_func *
+@@ -445,8 +443,16 @@ add_file_handler (int fd, handler_func *
           m68k-motorola-sys, `poll' cannot be used to wait for `stdin'.
           On m68k-motorola-sysv, tty's are not stream-based and not
           `poll'able.  */
@@ -51,7 +51,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
        if (poll (&fds, 1, 0) == 1 && (fds.revents & POLLNVAL))
  	use_poll = 0;
  #else
-@@ -472,15 +478,21 @@ add_file_handler (int fd, handler_func *
+@@ -457,15 +463,21 @@ add_file_handler (int fd, handler_func *
    if (use_poll)
      {
  #ifdef HAVE_POLL
@@ -77,11 +77,11 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  
  /* Add a file handler/descriptor to the list of descriptors we are
 diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
---- binutils-gdb.orig/gdb/event-loop.h	2018-03-02 17:22:14.323187193 +0100
-+++ binutils-gdb.new/gdb/event-loop.h	2018-03-02 17:24:10.739320628 +0100
-@@ -69,6 +69,12 @@
+--- binutils-gdb.orig/gdb/event-loop.h	2018-03-04 02:53:18.489945815 +0100
++++ binutils-gdb.new/gdb/event-loop.h	2018-03-04 02:55:37.714311378 +0100
+@@ -67,6 +67,12 @@
  
- #include "gdb_sys_time.h"
+    Corollary tasks are the creation and deletion of event sources.  */
  
 +/* Tell add_file_handler_with_mode what events we are interested in. */
 +
@@ -92,7 +92,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
  typedef void *gdb_client_data;
  struct async_signal_handler;
  struct async_event_handler;
-@@ -84,6 +90,8 @@ extern int gdb_do_one_event (struct time
+@@ -82,6 +88,8 @@ extern int gdb_do_one_event (int mstimeo
  extern void delete_file_handler (int fd);
  extern void add_file_handler (int fd, handler_func *proc, 
  			      gdb_client_data client_data);
