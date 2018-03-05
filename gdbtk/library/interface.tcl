@@ -1,5 +1,5 @@
 # Interface between GDB and Insight.
-# Copyright (C) 1997-2017 Red Hat, Inc.
+# Copyright (C) 1997-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -1626,7 +1626,7 @@ proc set_baud {} {
     set baud [pref get gdb/load/baud]
   }
 #  debug "setting baud to $baud"
-  catch {gdb_cmd "set remotebaud $baud"}
+  catch {gdb_cmd "set serial baud $baud"}
 }
 
 # ------------------------------------------------------------------

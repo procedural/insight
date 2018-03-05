@@ -1,5 +1,5 @@
 # Target selection dialog for Insight.
-# Copyright (C) 1997-2015 Red Hat, Inc.
+# Copyright (C) 1997-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -415,7 +415,7 @@ itcl::body TargetSelection::build_win {} {
     -textvariable [pref varname gdb/load/$target-baud] -width $Width \
     -maxheight 10 -bg $::Colors(textbg)
 
-  if {[catch {gdb_cmd "show remotebaud"} res]} {
+  if {[catch {gdb_cmd "show serial baud"} res]} {
     set baud [pref get gdb/load/$target-baud]
   } else {
     set baud [lindex $res end]
@@ -870,8 +870,8 @@ itcl::body TargetSelection::change_baud {w {baud ""}} {
   if {$baud != ""} {
     if {([string compare $baud "TCP"] != 0)
         && ([string compare $baud "ETH"] != 0)} {
-      gdb_cmd "set remotebaud $baud"
-      if {[catch {gdb_cmd "show remotebaud"} res]} {
+      gdb_cmd "set serial baud $baud"
+      if {[catch {gdb_cmd "show serial baud"} res]} {
 	set newbaud 0
       } else {
 	set newbaud [lindex $res end]
@@ -976,7 +976,7 @@ itcl::body TargetSelection::save {} {
 # ------------------------------------------------------------------
 itcl::body TargetSelection::cancel {} {
   global gdb_target_name
-  catch {gdb_cmd "set remotebaud $saved_baud"}
+  catch {gdb_cmd "set serial baud $saved_baud"}
 
   $fr.cb configure -value $saved_baud
   write_saved
