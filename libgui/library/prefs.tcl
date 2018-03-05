@@ -1,5 +1,6 @@
 # prefs.tcl - Preference handling.
-# Copyright (C) 1997 Cygnus Solutions.
+# Copyright (C) 1997-2017 Cygnus Solutions.
+# Copyright (C) 2018 Free Software Foundation, Inc.
 # Written by Tom Tromey <tromey@cygnus.com>.
 
 # KNOWN BUGS:
@@ -102,7 +103,7 @@ proc PREFS_cmd_getd {name} {
 # Return name of global variable that represents option NAME
 # This is suitable for (eg) a -variable option on a radiobutton
 proc PREFS_cmd_varname {name} {
-  return PREFS_state([list $name value])
+  return ::PREFS_state([list $name value])
 }
 
 # pref set NAME VALUE
@@ -137,13 +138,13 @@ proc PREFS_cmd_setd {name value} {
 # changes.  The command is run with the name of the changed option and
 # the new value as arguments.
 proc PREFS_cmd_add_hook {name hook} {
-  add_hook PREFS_state([list $name handler]) $hook
+  add_hook ::PREFS_state([list $name handler]) $hook
 }
 
 # pref remove_hook NAME HOOK
 # Remove a command from the per-preference hook.
 proc PREFS_cmd_remove_hook {name hook} {
-  remove_hook PREFS_state([list $name handler]) $hook
+  remove_hook ::PREFS_state([list $name handler]) $hook
 }
 
 # pref init ?IDE_RUNNING?
