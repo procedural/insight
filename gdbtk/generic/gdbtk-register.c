@@ -1,5 +1,5 @@
 /* Tcl/Tk command definitions for Insight - Registers
-   Copyright (C) 2001-2017 Free Software Foundation, Inc.
+   Copyright (C) 2001-2018 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -33,6 +33,48 @@
 #include "gdbtk.h"
 #include "gdbtk-cmds.h"
 
+
+/* Extended reg_buffer class to handle register comparison, types & formats. */
+
+class gdbtk_reg_buffer : public reg_buffer
+{
+public:
+  gdbtk_reg_buffer (gdbarch *gdbarch);
+
+  virtual ~gdbtk_reg_buffer ()
+  {
+    xfree (m_format);
+    xfree (m_type);
+  }
+
+  int num_registers () const
+  {
+    return gdbarch_num_regs (arch ()) + gdbarch_num_pseudo_regs (arch ());
+  }
+
+  bool changed_p (int regnum);
+  int get_format (int regnum) const
+  {
+    return m_format[regnum];
+  }
+  void set_format (int regnum, int fmt)
+  {
+    m_format[regnum] = fmt;
+  }
+  struct type *get_type (int regnum) const
+  {
+    return m_type[regnum];
+  }
+  void set_type (int regnum, struct type *regtype)
+  {
+    m_type[regnum] = regtype;
+  }
+
+protected:
+  int *m_format;
+  struct type **m_type;
+};
+
 /* Argument passed to our register-mapping functions */
 typedef union
 {
@@ -58,15 +100,47 @@ static int gdb_reggroup (ClientData, Tcl_Interp *, int, Tcl_Obj **);
 static int gdb_reggrouplist (ClientData, Tcl_Interp *, int, Tcl_Obj **);
 static int gdb_regspecial (ClientData, Tcl_Interp *, int, Tcl_Obj **);
 
-/* This contains the previous values of the registers, since the last call to
-   gdb_changed_register_list.
 
-   It is an array of (NUM_REGS+NUM_PSEUDO_REGS)*MAX_REGISTER_RAW_SIZE bytes. */
+static gdbtk_reg_buffer *registers = NULL;
 
-static char *old_regs = NULL;
-static int old_regs_count = 0;
-static int *regformat = (int *)NULL;
-static struct type **regtype = (struct type **)NULL;
+
+gdbtk_reg_buffer::gdbtk_reg_buffer (gdbarch *gdbarch)
+    : reg_buffer (gdbarch, true)
+{
+  m_format = XCNEWVEC (int, num_registers ());
+  m_type = (struct type **) XCNEWVEC (struct type *, num_registers ());
+}
+
+bool gdbtk_reg_buffer::changed_p (int regnum)
+{
+  bool changed = false;
+
+  if (target_has_registers)
+    {
+      signed char regstatus = REG_VALID;
+      gdb_byte *regbuf = register_buffer (regnum);
+      int regsize = register_size (arch (), regnum);
+      struct value *val = get_frame_register_value (get_selected_frame (NULL),
+                                                    regnum);
+
+      if (!val || value_optimized_out (val) || !value_entirely_available (val))
+        regstatus = REG_UNAVAILABLE;
+      changed = regstatus != m_register_status[regnum];
+      if (!changed && regstatus == REG_VALID)
+        changed = memcmp (regbuf, value_contents_all (val), regsize) != 0;
+      if (changed)
+        {
+          m_register_status[regnum] = regstatus;
+          if (regstatus == REG_VALID)
+            memcpy (regbuf, value_contents_all (val), regsize);
+          else
+            memset (regbuf, 0, regsize);
+        }
+    }
+
+  return changed;
+}
+
 
 int
 Gdbtk_Register_Init (Tcl_Interp *interp)
@@ -345,11 +419,11 @@ get_register (int regnum, map_arg arg)
   struct value *val;
   struct frame_info *frame;
 
-  format = regformat[regnum];
+  format = registers->get_format (regnum);
   if (format == 0)
     format = 'x';
 
-  reg_vtype = regtype[regnum];
+  reg_vtype = registers->get_type (regnum);
   if (reg_vtype == NULL)
     reg_vtype = register_type (get_current_arch (), regnum);
 
@@ -494,28 +568,11 @@ map_arg_registers (Tcl_Interp *interp, int objc, Tcl_Obj **objv,
 static void
 register_changed_p (int regnum, map_arg arg)
 {
-  struct value *val;
-  gdb_assert (regnum < old_regs_count);
+  gdb_assert (regnum < registers->num_registers ());
 
-  if (!target_has_registers)
-    return;
-
-  val = get_frame_register_value (get_selected_frame (NULL), regnum);
-  if (value_optimized_out (val) || !value_entirely_available (val))
-    return;
-
-  if (memcmp (&old_regs[regnum * MAX_REGISTER_SIZE],
-	      value_contents_all (val),
-	      register_size (get_current_arch (), regnum)) == 0)
-    return;
-
-  /* Found a changed register.  Save new value and return its number. */
-
-  memcpy (&old_regs[regnum * MAX_REGISTER_SIZE],
-	  value_contents_all (val),
-	  register_size (get_current_arch (), regnum));
-
-  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr, Tcl_NewIntObj (regnum));
+  if (registers->changed_p (regnum))
+    Tcl_ListObjAppendElement (NULL,
+                              result_ptr->obj_ptr, Tcl_NewIntObj (regnum));
 }
 
 static void
@@ -523,17 +580,10 @@ setup_architecture_data (void)
 {
   int numregs;
 
-  xfree (old_regs);
-  xfree (regformat);
-  xfree (regtype);
+  if (registers)
+    delete registers;
 
-  /* Always use target architecture: has just been set. */
-  numregs = (gdbarch_num_regs (target_gdbarch ())
-	     + gdbarch_num_pseudo_regs (target_gdbarch ()));
-  old_regs_count = numregs;
-  old_regs = (char *) xcalloc (1, numregs * MAX_REGISTER_SIZE + 1);
-  regformat = (int *) xcalloc (numregs, sizeof(int));
-  regtype = (struct type **) xcalloc (numregs, sizeof(struct type **));
+  registers = new gdbtk_reg_buffer (target_gdbarch ());
 }
 
 /* gdb_regformat sets the format for a register */
@@ -567,15 +617,15 @@ gdb_regformat (ClientData clientData, Tcl_Interp *interp,
 
   numregs = (gdbarch_num_regs (get_current_arch ())
 	     + gdbarch_num_pseudo_regs (get_current_arch ()));
-  gdb_assert (numregs == old_regs_count);
+  gdb_assert (numregs == registers->num_registers ());
   if (regno >= numregs)
     {
       gdbtk_set_result (interp, "Register number %d too large", regno);
       return TCL_ERROR;
     }
 
-  regformat[regno] = fm;
-  regtype[regno] = type;
+  registers->set_format (regno, fm);
+  registers->set_type (regno, type);
 
   return TCL_OK;
 }
