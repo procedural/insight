@@ -31,7 +31,7 @@
 #include "top.h"
 #include "annotate.h"
 #include "cli/cli-decode.h"
-#include "observer.h"
+#include "observable.h"
 #include "gdbthread.h"
 #include "event-loop.h"
 
@@ -121,14 +121,14 @@ void
 gdbtk_add_hooks (void)
 {
   /* Gdb observers */
-  observer_attach_breakpoint_created (gdbtk_create_breakpoint);
-  observer_attach_breakpoint_modified (gdbtk_modify_breakpoint);
-  observer_attach_breakpoint_deleted (gdbtk_delete_breakpoint);
-  observer_attach_architecture_changed (gdbtk_architecture_changed);
-  observer_attach_memory_changed (gdbtk_memory_changed);
-  observer_attach_command_param_changed (gdbtk_param_changed);
-  observer_attach_register_changed (gdbtk_register_changed);
-  observer_attach_traceframe_changed (gdbtk_trace_find);
+  gdb::observers::breakpoint_created.attach (gdbtk_create_breakpoint);
+  gdb::observers::breakpoint_modified.attach (gdbtk_modify_breakpoint);
+  gdb::observers::breakpoint_deleted.attach (gdbtk_delete_breakpoint);
+  gdb::observers::architecture_changed.attach (gdbtk_architecture_changed);
+  gdb::observers::memory_changed.attach (gdbtk_memory_changed);
+  gdb::observers::command_param_changed.attach (gdbtk_param_changed);
+  gdb::observers::register_changed.attach (gdbtk_register_changed);
+  gdb::observers::traceframe_changed.attach (gdbtk_trace_find);
 
   /* Hooks */
   deprecated_call_command_hook = gdbtk_call_command;

@@ -2,7 +2,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
 --- binutils-gdb.orig/gdb/event-loop.c	2018-03-04 02:53:18.489945815 +0100
 +++ binutils-gdb.new/gdb/event-loop.c	2018-03-04 02:55:37.714311378 +0100
 @@ -37,13 +37,6 @@
- #include "observer.h"
+ #include "observable.h"
  #include "top.h"
  
 -/* Tell create_file_handler what events we are interested in.
