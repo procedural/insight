@@ -106,7 +106,7 @@ diff -Naurp binutils-gdb/gdb/top.c binutils-gdb.new/gdb/top.c
      if (ui->prompt_state != PROMPT_BLOCKED)
        break;
  }
-@@ -1000,7 +1000,7 @@ gdb_readline_wrapper (const char *prompt
+@@ -996,7 +996,7 @@ gdb_readline_wrapper (const char *prompt
      (*after_char_processing_hook) ();
    gdb_assert (after_char_processing_hook == NULL);
  
