@@ -1,6 +1,6 @@
 diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
---- binutils-gdb.orig/gdb/event-loop.c	2018-03-04 02:53:18.489945815 +0100
-+++ binutils-gdb.new/gdb/event-loop.c	2018-03-04 02:55:37.714311378 +0100
+--- binutils-gdb.orig/gdb/event-loop.c	2018-03-30 19:07:34.688587776 +0200
++++ binutils-gdb.new/gdb/event-loop.c	2018-03-30 19:10:36.494398861 +0200
 @@ -37,13 +37,6 @@
  #include "observable.h"
  #include "top.h"
@@ -15,29 +15,29 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  /* Data point to pass to the event handler.  */
  typedef union event_data
  {
-@@ -431,11 +424,16 @@ start_event_loop (void)
+@@ -431,12 +424,17 @@ start_event_loop (void)
     doesn't have to know implementation details about the use of poll
     vs. select.  */
  void
 -add_file_handler (int fd, handler_func * proc, gdb_client_data client_data)
-+add_file_handler_with_mode (int fd, int mask,
-+                            handler_func * proc, gdb_client_data client_data)
++add_file_handler (int fd, handler_func * proc, gdb_client_data client_data,
++		  int mask)
  {
  #ifdef HAVE_POLL
    struct pollfd fds;
++  int pollmask = 0;
  #endif
-+  int pollmask;
-+
+ 
 +  if (fd < 0 || (mask & (GDB_READABLE | GDB_WRITABLE | GDB_EXCEPTION)) == 0)
 +    return;
- 
++
    if (use_poll)
      {
-@@ -445,8 +443,16 @@ add_file_handler (int fd, handler_func *
+ #ifdef HAVE_POLL
+@@ -445,8 +443,15 @@ add_file_handler (int fd, handler_func *
           m68k-motorola-sys, `poll' cannot be used to wait for `stdin'.
           On m68k-motorola-sysv, tty's are not stream-based and not
           `poll'able.  */
-+      pollmask = 0;
 +      if (mask & GDB_READABLE)
 +        pollmask |= POLLIN | POLLRDHUP;
 +      if (mask & GDB_WRITABLE)
@@ -51,7 +51,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
        if (poll (&fds, 1, 0) == 1 && (fds.revents & POLLNVAL))
  	use_poll = 0;
  #else
-@@ -457,15 +463,21 @@ add_file_handler (int fd, handler_func *
+@@ -457,15 +462,14 @@ add_file_handler (int fd, handler_func *
    if (use_poll)
      {
  #ifdef HAVE_POLL
@@ -66,24 +66,17 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
 -    create_file_handler (fd, GDB_READABLE | GDB_EXCEPTION, 
 -			 proc, client_data);
 +    create_file_handler (fd, mask, proc, client_data);
-+}
-+
-+void
-+add_file_handler (int fd, handler_func * proc, gdb_client_data client_data)
-+{
-+  add_file_handler_with_mode (fd, GDB_READABLE | GDB_EXCEPTION,
-+                              proc, client_data);
  }
  
  /* Add a file handler/descriptor to the list of descriptors we are
 diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
---- binutils-gdb.orig/gdb/event-loop.h	2018-03-04 02:53:18.489945815 +0100
-+++ binutils-gdb.new/gdb/event-loop.h	2018-03-04 02:55:37.714311378 +0100
-@@ -67,6 +67,12 @@
+--- binutils-gdb.orig/gdb/event-loop.h	2018-03-30 19:08:27.752116923 +0200
++++ binutils-gdb.new/gdb/event-loop.h	2018-03-30 19:16:18.058621399 +0200
+@@ -70,6 +70,12 @@
+ #ifndef EVENT_LOOP_H
+ #define EVENT_LOOP_H
  
-    Corollary tasks are the creation and deletion of event sources.  */
- 
-+/* Tell add_file_handler_with_mode what events we are interested in. */
++/* Tell add_file_handler what events we are interested in. */
 +
 +#define GDB_READABLE	(1<<1)
 +#define GDB_WRITABLE	(1<<2)
@@ -92,12 +85,13 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
  typedef void *gdb_client_data;
  struct async_signal_handler;
  struct async_event_handler;
-@@ -82,6 +88,8 @@ extern int gdb_do_one_event (int mstimeo
+@@ -84,7 +90,8 @@ extern void start_event_loop (void);
+ extern int gdb_do_one_event (int mstimeout = -1);
  extern void delete_file_handler (int fd);
  extern void add_file_handler (int fd, handler_func *proc, 
- 			      gdb_client_data client_data);
-+extern void add_file_handler_with_mode (int fd, int mask, handler_func *proc, 
-+			                gdb_client_data client_data);
+-			      gdb_client_data client_data);
++			      gdb_client_data client_data,
++			      int mask = GDB_READABLE | GDB_EXCEPTION);
  extern struct async_signal_handler *
    create_async_signal_handler (sig_handler_func *proc, 
  			       gdb_client_data client_data);

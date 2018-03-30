@@ -491,8 +491,8 @@ gdbtk_notifier_create_file_handler (int fd, int tclmask, Tcl_FileProc *proc,
   data->clientData = clientData;
   data->next = notif->filelist;
   notif->filelist = data;
-  add_file_handler_with_mode (fd, gdbmask,
-                              gdbtk_notifier_file_proc, (gdb_client_data) data);
+  add_file_handler (fd, gdbtk_notifier_file_proc, (gdb_client_data) data,
+		    gdbmask);
 }
 
 /* Tcl notifier procedure to initialize the notifier. */
