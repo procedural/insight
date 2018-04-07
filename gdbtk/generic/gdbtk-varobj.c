@@ -1,5 +1,5 @@
 /* Variable user interface layer for GDB, the GNU debugger.
-   Copyright (C) 1999-2017 Free Software Foundation, Inc.
+   Copyright (C) 1999-2018 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -644,7 +644,7 @@ variable_print (Tcl_Interp *interp, int objc,
       varobj_formatted_print_options (&opts, varobj_get_display_format (var));
       opts.deref_ref = 1;
       opts.raw = 0;
-      common_val_print (var->value, &stream, 0, &opts, current_language);
+      common_val_print (var->value.get (), &stream, 0, &opts, current_language);
       Tcl_SetObjResult (interp, Tcl_NewStringObj (stream.data (), -1));
       ret = TCL_OK;
     }
