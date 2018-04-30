@@ -104,8 +104,8 @@ static void gdbtk_param_changed (const char *, const char *);
 class gdbtk_file : public ui_file
 {
 public:
-  long read (char *buf, long length_buf);
-  void write (const char *buf, long length_buf);
+  virtual long read (char *buf, long length_buf) override;
+  virtual void write (const char *buf, long length_buf) override;
 };
 
 static int gdbtk_load_hash (const char *, unsigned long);
