@@ -1,5 +1,5 @@
 /* Tcl/Tk command definitions for Insight.
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2018 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
    Substantially augmented by Martin Hunt, Keith Seitz & Jim Ingham of
@@ -476,7 +476,7 @@ gdb_clear_file (ClientData clientData, Tcl_Interp *interp,
     }
 
   gdbtk_delete_all_breakpoints ();
-  exec_file_clear (0);
+  exec_close ();
   symbol_file_clear (0);
 
   return TCL_OK;
@@ -576,12 +576,7 @@ gdb_stop (ClientData clientData, Tcl_Interp *interp,
       gdbtk_force_detach = 1;
     }
   else
-    {
-      if (NULL != (void (*) (void)) current_target.to_stop)
-	target_stop (gdbtk_get_ptid ());
-      else
-	set_quit_flag ();		/* hope something sees this */
-    }
+    target_stop (gdbtk_get_ptid ());
 
   return TCL_OK;
 }
@@ -2309,7 +2304,7 @@ gdb_entry_point (ClientData clientData, Tcl_Interp *interp,
 
   /* If we have not yet loaded an exec file, then we have no
      entry point, so return an empty string.*/
-  if ((int) current_target.to_stratum > (int) dummy_stratum)
+  if ((int) target_stack->to_stratum > (int) dummy_stratum)
     {
       addrstr = (char *)core_addr_to_string (entry_point_address ());
       Tcl_SetStringObj (result_ptr->obj_ptr, addrstr, -1);
@@ -2519,8 +2514,8 @@ gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
   mptr = cptr = mbuf;
 
   /* Dispatch memory reads to the topmost target, not the flattened
-     current_target.  */
-  rnum = target_read (current_target.beneath, TARGET_OBJECT_MEMORY, NULL,
+     current target.  */
+  rnum = target_read (target_stack->beneath, TARGET_OBJECT_MEMORY, NULL,
 		      mbuf, addr, nbytes);
   if (rnum <= 0)
     {

@@ -81,7 +81,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    i[[3456789]]86-w64-mingw*)
      ;;
-@@ -1114,13 +1099,13 @@ case "${target}" in
+@@ -1118,13 +1103,13 @@ case "${target}" in
      ;;
    powerpc*-*-winnt* | powerpc*-*-pe*)
      target_configdirs="$target_configdirs target-winsup"
@@ -97,7 +97,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
-@@ -2702,7 +2687,7 @@ if echo " ${target_configdirs} " | grep
+@@ -2706,7 +2691,7 @@ if echo " ${target_configdirs} " | grep
    esac
  fi
  
@@ -106,7 +106,7 @@ diff -Naurp a/configure.ac b/configure.ac
  # Use 'maybe' since enable_gdbtk might be true even if tk isn't available
  # and in that case we want gdb to be built without tk.  Ugh!
  # In fact I believe gdb is the *only* package directly dependent on tk,
-@@ -2710,7 +2695,7 @@ fi
+@@ -2714,7 +2699,7 @@ fi
  # leave out the maybe dependencies when enable_gdbtk is false.  I'm not
  # 100% sure that that's safe though.
  
