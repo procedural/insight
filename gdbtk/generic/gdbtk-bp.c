@@ -417,25 +417,25 @@ get_breakpoint_commands (struct command_line *cmd)
 	  Tcl_AppendToObj (tmp, cmd->line, -1);
 	  Tcl_ListObjAppendElement (NULL, obj, tmp);
 	  Tcl_ListObjAppendList (NULL, obj,
-				 get_breakpoint_commands (*cmd->body_list));
+				 get_breakpoint_commands (cmd->body_list_0.get ()));
 	  Tcl_ListObjAppendElement (NULL, obj,
 				    Tcl_NewStringObj ("end", -1));
 	  break;
 
 	case if_control:
-	  /* An if statement. cmd->body_list[0] is the true part,
-	     cmd->body_list[1] contains the "else" (false) part. */
+	  /* An if statement. cmd->body_list_0 is the true part,
+	     cmd->body_list_1 contains the "else" (false) part. */
 	  tmp = Tcl_NewStringObj ("if ", -1);
 	  Tcl_AppendToObj (tmp, cmd->line, -1);
 	  Tcl_ListObjAppendElement (NULL, obj, tmp);
 	  Tcl_ListObjAppendList (NULL, obj,
-				 get_breakpoint_commands (cmd->body_list[0]));
-	  if (cmd->body_count == 2)
+				 get_breakpoint_commands (cmd->body_list_0.get ()));
+	  if (cmd->body_list_1 != nullptr)
 	    {
 	      Tcl_ListObjAppendElement (NULL, obj,
 					Tcl_NewStringObj ("else", -1));
 	      Tcl_ListObjAppendList (NULL, obj,
-				     get_breakpoint_commands(cmd->body_list[1]));
+				     get_breakpoint_commands (cmd->body_list_1.get ()));
 	    }
 	  Tcl_ListObjAppendElement (NULL, obj,
 				    Tcl_NewStringObj ("end", -1));
@@ -671,7 +671,7 @@ gdb_actions_command (ClientData clientData, Tcl_Interp *interp,
 {
   int tpnum;
   struct tracepoint *tp;
-  command_line_up commands;
+  counted_command_line commands;
 
   if (objc != 3)
     {
@@ -699,7 +699,10 @@ gdb_actions_command (ClientData clientData, Tcl_Interp *interp,
   gdbtk_obj_array_ptr = 0;
   if (gdbtk_obj_array_cnt && gdbtk_obj_array)
     commands = read_command_lines_1 (gdbtk_read_next_line, 1,
-				     check_tracepoint_command, tp);
+				     [=] (const char *line)
+				       {
+					 validate_actionline (line, tp);
+				       });
 
   breakpoint_set_commands ((struct breakpoint *) tp, std::move (commands));
   return TCL_OK;
@@ -728,8 +731,8 @@ gdb_get_action_list (Tcl_Interp *interp,
     {
       Tcl_ListObjAppendElement (interp, action_list,
                                 Tcl_NewStringObj (cl->line, -1));
-      if (cl->body_list)
-        gdb_get_action_list (interp, action_list, *cl->body_list);
+      if (cl->body_list_0 != nullptr)
+        gdb_get_action_list (interp, action_list, cl->body_list_0.get ());
     }
   Tcl_ListObjAppendElement (interp, action_list,
                             Tcl_NewStringObj ("end", -1));
