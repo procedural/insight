@@ -2512,10 +2512,7 @@ gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
 
   memset (mbuf, 0, nbytes + 32);
   mptr = cptr = mbuf;
-
-  /* Dispatch memory reads to the topmost target, not the flattened
-     current target.  */
-  rnum = target_read (target_stack->beneath, TARGET_OBJECT_MEMORY, NULL,
+  rnum = target_read (target_stack, TARGET_OBJECT_MEMORY, NULL,
 		      mbuf, addr, nbytes);
   if (rnum <= 0)
     {
