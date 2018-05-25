@@ -109,21 +109,21 @@ dnl Now regenerate the configure files
 	cd bundle/gdb/gnulib
 	echo "Regenerate `pwd`"
 	aclocal -I . -I import/m4 -I ../../config
-	automake
+	automake --add-missing
 	autoconf --force
 )
 (
 	cd bundle/gdb/gdbtk
 	echo "Regenerate `pwd`"
 	aclocal -I . -I ../../config
-	automake
+	automake --add-missing
 	autoconf --force
 )
 (
 	cd bundle/gdb/gdbtk/plugins
 	echo "Regenerate `pwd`"
 	aclocal -I . -I ../../../config
-	automake
+	automake --add-missing
 	autoconf --force
 )
 (
@@ -131,7 +131,7 @@ dnl Now regenerate the configure files
 	echo "Regenerate `pwd`"
 	aclocal -I . -I ../config
 	# autoheader
-	automake
+	automake --add-missing
 	autoconf --force
 )
 (
