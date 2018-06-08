@@ -637,7 +637,7 @@ gdbtk_start_timer (void)
 #endif
     }
 
-  if (target_should_use_timer (target_stack))
+  if (target_should_use_timer (current_top_target ()))
     {
       if (!gdbtk_timer_going)
 	{
