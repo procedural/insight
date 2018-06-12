@@ -111,7 +111,7 @@ bool gdbtk_reg_buffer::changed_p (int regnum)
 
   if (target_has_registers)
     {
-      signed char regstatus = REG_VALID;
+      register_status regstatus = REG_VALID;
       gdb_byte *regbuf = register_buffer (regnum);
       int regsize = register_size (arch (), regnum);
       struct value *val = get_frame_register_value (get_selected_frame (NULL),
