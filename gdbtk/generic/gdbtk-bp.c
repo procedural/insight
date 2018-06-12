@@ -621,7 +621,7 @@ gdbtk_delete_all_breakpoints (void)
 static void
 breakpoint_notify (int num, const char *action)
 {
-  char *buf;
+  std::string buf;
   struct breakpoint *b;
 
   b = get_breakpoint (num);
@@ -642,13 +642,12 @@ breakpoint_notify (int num, const char *action)
   /* We ensure that ACTION contains no special Tcl characters, so we
      can do this.  */
   if (b->type == bp_breakpoint)
-    buf = xstrprintf ("gdbtk_tcl_breakpoint %s %d", action, b->number);
+    buf = string_printf ("gdbtk_tcl_breakpoint %s %d", action, b->number);
   else
-    buf = xstrprintf ("gdbtk_tcl_tracepoint %s %d", action, b->number);
+    buf = string_printf ("gdbtk_tcl_tracepoint %s %d", action, b->number);
 
-  if (Tcl_Eval (gdbtk_tcl_interp, buf) != TCL_OK)
+  if (Tcl_Eval (gdbtk_tcl_interp, buf.c_str ()) != TCL_OK)
     report_error ();
-  xfree(buf);
 }
 
 /*
@@ -859,7 +858,7 @@ tracepoint_exists (const char *args)
   struct breakpoint *tp;
   std::vector<symtab_and_line> sals;
   event_location_up location;
-  char *file = NULL;
+  std::string file;
   int result = -1;
 
   location = string_to_event_location (&args, current_language);
@@ -868,31 +867,30 @@ tracepoint_exists (const char *args)
   if (sals.size () == 1)
     {
       resolve_sal_pc (&sals[0]);
-      file = (char *) xmalloc (strlen (SYMTAB_DIRNAME (sals[0].symtab)) +
-			       strlen (sals[0].symtab->filename) + 1);
-      if (file != NULL)
+      try
 	{
-	  strcpy (file, SYMTAB_DIRNAME (sals[0].symtab));
-	  strcat (file, sals[0].symtab->filename);
-
-	  tp_vec = all_tracepoints ();
-	  for (ix = 0; VEC_iterate (breakpoint_p, tp_vec, ix, tp); ix++)
-	    {
-	      if (tp->loc && tp->loc->address == sals[0].pc)
-		result = tp->number;
-#if 0
-	      /* Why is this here? This messes up assembly traces */
-	      else if (tp->source_file != NULL
-		       && strcmp (tp->source_file, file) == 0
-		       && sals[0].line == tp->line_number)
-		result = tp->number;
-#endif
-	    }
-	  VEC_free (breakpoint_p, tp_vec);
+	  file = SYMTAB_DIRNAME (sals[0].symtab);
+	  file += sals[0].symtab->filename;
 	}
+      catch (...)
+        {
+          file.clear ();
+        }
+
+      tp_vec = all_tracepoints ();
+      for (ix = 0; VEC_iterate (breakpoint_p, tp_vec, ix, tp); ix++)
+	{
+	  if (tp->loc && tp->loc->address == sals[0].pc)
+	    result = tp->number;
+#if 0
+	  /* Why is this here? This messes up assembly traces */
+	  else if (tp->source_file != NULL && !file.empty () &&
+                   tp->source_file == file && sals[0].line == tp->line_number)
+	    result = tp->number;
+#endif
+	}
+      VEC_free (breakpoint_p, tp_vec);
     }
-  if (file != NULL)
-    free (file);
   return result;
 }
 

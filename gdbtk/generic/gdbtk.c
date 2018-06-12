@@ -712,7 +712,6 @@ void
 gdbtk_init (void)
 {
   struct cleanup *old_chain;
-  char *s;
   int element_count;
   const char **exec_path;
   CONST char *internal_exec_name;
@@ -735,10 +734,8 @@ gdbtk_init (void)
 
   /* Set up some globals used by gdb to pass info to gdbtk
      for start up options and the like */
-  s = xstrprintf ("%d", inhibit_gdbinit);
-  Tcl_SetVar2 (gdbtk_tcl_interp, "GDBStartup",
-               "inhibit_prefs", s, TCL_GLOBAL_ONLY);
-  free(s);
+  Tcl_SetVar2 (gdbtk_tcl_interp, "GDBStartup", "inhibit_prefs",
+               string_printf ("%d", inhibit_gdbinit).c_str (), TCL_GLOBAL_ONLY);
 
   /* Note: Tcl_SetVar2() treats the value as read-only (making a
      copy).  Unfortunately it does not mark the parameter as
@@ -1076,8 +1073,7 @@ static void
 tk_command (const char *cmd, int from_tty)
 {
   int retval;
-  char *result;
-  struct cleanup *old_chain;
+  std::string result;
 
   /* Catch case of no argument, since this will make the tcl interpreter
      dump core. */
@@ -1085,38 +1081,29 @@ tk_command (const char *cmd, int from_tty)
     error_no_arg ("tcl command to interpret");
 
   retval = Tcl_Eval (gdbtk_tcl_interp, cmd);
-
-  result = xstrdup (Tcl_GetStringResult (gdbtk_tcl_interp));
-
-  old_chain = make_cleanup (xfree, result);
+  result = Tcl_GetStringResult (gdbtk_tcl_interp);
 
   if (retval != TCL_OK)
-    error ("%s", result);
+    error ("%s", result.c_str ());
 
-  printf_unfiltered ("%s\n", result);
-
-  do_cleanups (old_chain);
+  printf_unfiltered ("%s\n", result.c_str ());
 }
 
 static void
 view_command (const char *args, int from_tty)
 {
-  char *script;
-  struct cleanup *old_chain;
+  std::string script;
 
   if (args != NULL)
     {
-      script = xstrprintf (
+      script = string_printf (
 		 "[lindex [ManagedWin::find SrcWin] 0] location BROWSE_TAG [gdb_loc %s]",
 		 args);
-      old_chain = make_cleanup (xfree, script);
-      if (Tcl_Eval (gdbtk_tcl_interp, script) != TCL_OK)
+      if (Tcl_Eval (gdbtk_tcl_interp, script.c_str ()) != TCL_OK)
 	{
 	  Tcl_Obj *obj = Tcl_GetObjResult (gdbtk_tcl_interp);
 	  error ("%s", Tcl_GetStringFromObj (obj, NULL));
 	}
-
-      do_cleanups (old_chain);
     }
   else
     error ("Argument required (location to view)");

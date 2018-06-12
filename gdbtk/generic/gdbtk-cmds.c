@@ -47,6 +47,7 @@
 #include "arch-utils.h"
 #include "psymtab.h"
 #include <ctype.h>
+#include <algorithm>
 
 /* tcl header files includes varargs.h unless HAS_STDARG is defined,
    but gdb uses stdarg.h, so make sure HAS_STDARG is defined.  */
@@ -161,7 +162,6 @@ int Gdbtk_Init (Tcl_Interp * interp);
  */
 
 static int compare_lines (const PTR, const PTR);
-static int comp_files (const void *, const void *);
 static int gdb_clear_file (ClientData, Tcl_Interp * interp, int,
 			   Tcl_Obj * CONST[]);
 static int gdb_cmd (ClientData, Tcl_Interp *, int, Tcl_Obj * CONST[]);
@@ -1152,11 +1152,17 @@ gdb_find_file_command (ClientData clientData, Tcl_Interp *interp,
 
 struct listfiles_info
 {
-  int *numfilesp;
-  int *files_sizep;
-  const char ***filesp;
-  int len;
-  const char *pathname;
+  std::vector<const char *> files;
+  std::string pathname;
+
+  void addfile (const char *filename)
+  {
+    if (filename)
+      if (pathname.empty () ||
+          std::string (filename).find (pathname) == 0 ||
+	  !strcmp (filename, lbasename (filename)))
+        files.push_back (lbasename (filename));
+  }
 };
 
 /* This is a helper function for gdb_listfiles that is used via
@@ -1167,27 +1173,13 @@ do_listfiles (const char *filename, const char *fullname, void *data)
 {
   struct listfiles_info *info = (struct listfiles_info *) data;
 
-  if (*info->numfilesp == *info->files_sizep)
-    {
-      *info->files_sizep *= 2;
-      *info->filesp = (const char **) xrealloc (*info->filesp,
-						*info->files_sizep *
-						sizeof (char *));
-    }
-
-  if (filename)
-    {
-      if (!info->len || !strncmp (info->pathname, filename, info->len)
-	  || !strcmp (filename, lbasename (filename)))
-	{
-	  (*info->filesp)[(*info->numfilesp)++] = lbasename (filename);
-	}
-    }
+  (void) fullname;
+  info->addfile (filename);
 }
 
 /* This implements the tcl command "gdb_listfiles"
 
-* This lists all the files in the current executible.
+* This lists all the files in the current executable.
 *
 * Note that this currently pulls in all sorts of filenames
 * that aren't really part of the executable.  It would be
@@ -1213,13 +1205,8 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
   struct symtab *symtab;
   struct compunit_symtab *cu;
   const char *lastfile, *pathname = NULL;
-  const char **files;
-  int files_size;
-  int i, numfiles = 0, len = 0;
+  int i;
   struct listfiles_info info;
-
-  files_size = 1000;
-  files = (const char **) xmalloc (sizeof (char *) * files_size);
 
   if (objc > 2)
     {
@@ -1227,33 +1214,17 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
       return TCL_ERROR;
     }
   else if (objc == 2)
-    pathname = Tcl_GetStringFromObj (objv[1], &len);
+    info.pathname = Tcl_GetStringFromObj (objv[1], NULL);
 
-  info.numfilesp = &numfiles;
-  info.files_sizep = &files_size;
-  info.filesp = &files;
-  info.len = len;
-  info.pathname = pathname;
   map_symbol_filenames (do_listfiles, &info, 0);
 
   ALL_FILETABS (objfile, cu, symtab)
     {
-      if (numfiles == files_size)
-	{
-	  files_size = files_size * 2;
-	  files = (const char **) xrealloc (files, sizeof (char *) * files_size);
-	}
-      if (symtab->filename && symtab->linetable && symtab->linetable->nitems)
-	{
-	  if (!len || !strncmp (pathname, symtab->filename, len)
-	      || !strcmp (symtab->filename, lbasename (symtab->filename)))
-	    {
-	      files[numfiles++] = lbasename (symtab->filename);
-	    }
-	}
+      if (symtab->linetable && symtab->linetable->nitems)
+        info.addfile (symtab->filename);
     }
 
-  qsort (files, numfiles, sizeof (char *), comp_files);
+  std::sort (info.files.begin (), info.files.end (), strcmp);
 
   lastfile = "";
 
@@ -1262,22 +1233,15 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
 
   Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
 
-  for (i = 0; i < numfiles; i++)
+  for (i = 0; i < info.files.size (); i++)
     {
-      if (strcmp (files[i], lastfile))
+      if (strcmp (info.files[i], lastfile))
 	Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr,
-				  Tcl_NewStringObj (files[i], -1));
-      lastfile = files[i];
+				  Tcl_NewStringObj (info.files[i], -1));
+      lastfile = info.files[i];
     }
 
-  free (files);
   return TCL_OK;
-}
-
-static int
-comp_files (const void *file1, const void *file2)
-{
-  return strcmp (*(char **) file1, *(char **) file2);
 }
 
 
@@ -1308,7 +1272,7 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
   char *regexp;
   int static_only, nfiles;
   Tcl_Obj **file_list;
-  const char **files;
+  std::vector<const char *> files;
   static const char *search_options[] =
     {"functions", "variables", "types", (char *) NULL};
   static const char *switches[] =
@@ -1357,8 +1321,6 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
   switch_objv = objv + 3;
 
   static_only = 0;
-  nfiles = 0;
-  files = (const char **) NULL;
   while (switch_objc > 0)
     {
       if (Tcl_GetIndexFromObj (interp, switch_objv[0], switches,
@@ -1404,9 +1366,18 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
 	    if (result != TCL_OK)
 	      return result;
 
-	    files = (const char **) xmalloc (nfiles * sizeof (char *));
-	    for (i = 0; i < nfiles; i++)
-	      files[i] = Tcl_GetStringFromObj (file_list[i], NULL);
+	    try
+              {
+		for (i = 0; i < nfiles; i++)
+		  files.push_back (Tcl_GetStringFromObj (file_list[i], NULL));
+	      }
+	    catch (...)
+              {
+		gdbtk_set_result (interp, "Out of memory.");
+		result_ptr->flags |= GDBTK_IN_TCL_RESULT;
+		return TCL_ERROR;
+              }
+
 	    switch_objc--;
 	    switch_objv++;
 	  }
@@ -1432,7 +1403,7 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
       switch_objv++;
     }
 
-  ss = search_symbols (regexp, space, nfiles, files);
+  ss = search_symbols (regexp, space, files.size (), files.data ());
 
   Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
 
@@ -1980,7 +1951,7 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
 
   if (*client_data->map_arr != '\0')
     {
-      char *buffer;
+      std::string buffer;
 
       /* Run the command, then add an entry to the map array in
 	 the caller's scope. */
@@ -1990,13 +1961,13 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
       /* FIXME: Convert to Tcl_SetVar2Ex when we move to 8.2.  This
 	 will allow us avoid converting widget_line_no into a string. */
 
-      buffer = xstrprintf ("%d", client_data->widget_line_no);
+      buffer = string_printf ("%d", client_data->widget_line_no);
 
       Tcl_SetVar2 (client_data->interp, client_data->map_arr,
 		   Tcl_DStringValue (&client_data->pc_to_line_prefix),
-		   buffer, 0);
+		   buffer.c_str (), 0);
 
-      Tcl_DStringAppend (&client_data->line_to_pc_prefix, buffer, -1);
+      Tcl_DStringAppend (&client_data->line_to_pc_prefix, buffer.c_str (), -1);
 
 
       Tcl_SetVar2 (client_data->interp, client_data->map_arr,
@@ -2007,8 +1978,6 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
 
       Tcl_DStringSetLength (&client_data->pc_to_line_prefix, pc_to_line_len);
       Tcl_DStringSetLength (&client_data->line_to_pc_prefix, line_to_pc_len);
-
-      xfree (buffer);
     }
 
   do_cleanups (old_chain);
@@ -2446,7 +2415,8 @@ gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
   char format, aschar;
   char *data, *tmp;
   char buff[128], *bptr;
-  gdb_byte *mbuf, *mptr, *cptr;
+  std::vector<gdb_byte> mbuf;
+  gdb_byte *mptr, *cptr;
   string_file stb;
   struct type *val_type;
 
@@ -2503,17 +2473,19 @@ gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
   addr = string_to_core_addr (tmp);
 
   format = *(Tcl_GetStringFromObj (objv[3], NULL));
-  mbuf = (gdb_byte *) xmalloc (nbytes + 32);
-  if (!mbuf)
+  try
+    {
+      mbuf.resize (nbytes + 32, 0);
+    }
+  catch (...)
     {
       gdbtk_set_result (interp, "Out of memory.");
       return TCL_ERROR;
     }
 
-  memset (mbuf, 0, nbytes + 32);
-  mptr = cptr = mbuf;
+  mptr = cptr = mbuf.data ();
   rnum = target_read (current_top_target (), TARGET_OBJECT_MEMORY, NULL,
-		      mbuf, addr, nbytes);
+		      mbuf.data (), addr, nbytes);
   if (rnum <= 0)
     {
       gdbtk_set_result (interp, "Unable to read memory.");
@@ -2648,7 +2620,6 @@ gdb_update_mem (ClientData clientData, Tcl_Interp *interp,
   Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, Tcl_NewIntObj (max_label_len + 1));
   Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, Tcl_NewIntObj (max_val_len + 1));
   Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, Tcl_NewIntObj (max_ascii_len + 1));
-  xfree (mbuf);
   return TCL_OK;
 #undef INDEX
 }
@@ -2959,13 +2930,12 @@ void
 gdbtk_set_result (Tcl_Interp *interp, const char *fmt,...)
 {
   va_list args;
-  char *buf;
+  std::string buf;
 
   va_start (args, fmt);
-  buf = xstrvprintf (fmt, args);
+  buf = string_vprintf (fmt, args);
   va_end (args);
-  Tcl_SetObjResult (interp, Tcl_NewStringObj (buf, -1));
-  xfree(buf);
+  Tcl_SetObjResult (interp, Tcl_NewStringObj (buf.c_str (), -1));
 }
 
 

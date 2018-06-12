@@ -41,12 +41,6 @@ class gdbtk_reg_buffer : public reg_buffer
 public:
   gdbtk_reg_buffer (gdbarch *gdbarch);
 
-  virtual ~gdbtk_reg_buffer ()
-  {
-    xfree (m_format);
-    xfree (m_type);
-  }
-
   int num_registers () const
   {
     return gdbarch_num_regs (arch ()) + gdbarch_num_pseudo_regs (arch ());
@@ -71,8 +65,8 @@ public:
   }
 
 protected:
-  int *m_format;
-  struct type **m_type;
+  std::vector<int> m_format;
+  std::vector<struct type *> m_type;
 };
 
 /* Argument passed to our register-mapping functions */
@@ -107,8 +101,8 @@ static gdbtk_reg_buffer *registers = NULL;
 gdbtk_reg_buffer::gdbtk_reg_buffer (gdbarch *gdbarch)
     : reg_buffer (gdbarch, true)
 {
-  m_format = XCNEWVEC (int, num_registers ());
-  m_type = (struct type **) XCNEWVEC (struct type *, num_registers ());
+  m_format.resize (num_registers (), 0);
+  m_type.resize (num_registers (), NULL);
 }
 
 bool gdbtk_reg_buffer::changed_p (int regnum)
@@ -373,11 +367,10 @@ get_register_types (int regnum, map_arg arg)
       for (i = 0; i < n; i++)
 	{
 	  Tcl_Obj *ar[3], *list;
-	  char *buff;
-	  buff = xstrprintf ("%s", host_address_to_string (
-				     TYPE_FIELD_TYPE (reg_vtype, i)));
+
 	  ar[0] = Tcl_NewStringObj (TYPE_FIELD_NAME (reg_vtype, i), -1);
-	  ar[1] = Tcl_NewStringObj (buff, -1);
+	  ar[1] = Tcl_NewStringObj (host_address_to_string (
+                                     TYPE_FIELD_TYPE (reg_vtype, i)), -1);
 	  if (TYPE_CODE (TYPE_FIELD_TYPE (reg_vtype, i)) == TYPE_CODE_FLT)
 	    ar[2] = Tcl_NewStringObj ("float", -1);
 	  else
@@ -385,22 +378,19 @@ get_register_types (int regnum, map_arg arg)
 	  list = Tcl_NewListObj (3, ar);
 	  Tcl_ListObjAppendElement (gdbtk_tcl_interp,
                                     result_ptr->obj_ptr, list);
-	  xfree (buff);
 	}
     }
   else
     {
       Tcl_Obj *ar[3], *list;
-      char *buff;
-      buff = xstrprintf ("%s", host_address_to_string (reg_vtype));
+
       ar[0] = Tcl_NewStringObj (TYPE_NAME(reg_vtype), -1);
-      ar[1] = Tcl_NewStringObj (buff, -1);
+      ar[1] = Tcl_NewStringObj (host_address_to_string (reg_vtype), -1);
       if (TYPE_CODE (reg_vtype) == TYPE_CODE_FLT)
 	ar[2] = Tcl_NewStringObj ("float", -1);
       else
 	ar[2] = Tcl_NewStringObj ("int", -1);
       list = Tcl_NewListObj (3, ar);
-      xfree (buff);
       Tcl_ListObjAppendElement (gdbtk_tcl_interp, result_ptr->obj_ptr, list);
     }
 }
