@@ -56,14 +56,18 @@ extern void report_error (void);
    They are also used in gdbtk-hooks.c */
 
 const char *bptypes[] =
-  {"none", "breakpoint", "hw breakpoint", "until",
-   "finish", "watchpoint", "hw watchpoint",
-   "read watchpoint", "acc watchpoint",
-   "longjmp", "longjmp resume", "step resume",
-   "sigtramp", "watchpoint scope",
-   "call dummy", "shlib events", "catch load",
-   "catch unload", "catch fork", "catch vfork",
-   "catch exec", "catch catch", "catch throw"
+  {"none",
+   "breakpoint", "hw breakpoint",
+   "sw single-step", "until", "finish",
+   "watchpoint", "hw watchpoint", "read watchpoint", "acc watchpoint",
+   "longjmp", "longjmp resume", "longjmp for call dummy",
+   "exception", "exception resume", "step resume", "high-priority step resume",
+   "watchpoint scope", "call dummy", "std::terminate",
+   "shlib events", "thread events", "overlay events",
+   "longjmp master", "std::terminate master", "exception master",
+   "catchpoint", "tracepoint", "fast tracepoint", "static tracepoint",
+   "dprintf", "jit events",
+   "STT_GNU_IFUNC resolver", "STT_GNU_IFUNC resolver return"
   };
 const char *bpdisp[] =
   {"delete", "delstop", "disable", "donttouch"};
@@ -278,7 +282,7 @@ gdb_find_bp_at_line (ClientData clientData, Tcl_Interp *interp,
  * Tcl Result:
  *   A list with {file, function, line_number, address, type, enabled?,
  *                disposition, ignore_count, {list_of_commands},
- *                condition, thread, hit_count user_specification}
+ *                condition, thread, hit_count, user_specification}
  */
 static int
 gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
@@ -651,7 +655,7 @@ breakpoint_notify (int num, const char *action)
 }
 
 /*
- * This section contains the commands that deal with tracepoints:
+ * This section contains the commands that deal with tracepoints.
  */
 
 /* This implements the tcl command gdb_actions
