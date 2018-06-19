@@ -2,8 +2,8 @@
 - Unbundle tcl/tk/itcl/itk/iwidgets.
 
 diff -Naurp a/configure.ac b/configure.ac
---- a/configure.ac	2017-12-15 15:57:46.674391036 +0100
-+++ b/configure.ac	2017-12-15 16:11:37.040542259 +0100
+--- a/configure.ac	2018-06-19 12:18:03.167947274 +0200
++++ b/configure.ac	2018-06-19 12:19:17.925581129 +0200
 @@ -132,7 +132,7 @@ build_tools="build-texinfo build-flex bu
  
  # these libraries are used by various programs built for the host environment
@@ -13,7 +13,7 @@ diff -Naurp a/configure.ac b/configure.ac
  
  # these tools are built for the host environment
  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
-@@ -253,7 +253,7 @@ fi
+@@ -252,7 +252,7 @@ fi
  case ${with_x} in
    yes | "") ;; # the default value for this tree is that X11 is available
    no)
@@ -22,7 +22,7 @@ diff -Naurp a/configure.ac b/configure.ac
      # We won't be able to build gdbtk without X.
      enable_gdbtk=no 
      ;;
-@@ -407,21 +407,6 @@ case "${host}" in
+@@ -406,21 +406,6 @@ case "${host}" in
      configdirs="$configdirs libtermcap" ;;
  esac
  
@@ -44,7 +44,7 @@ diff -Naurp a/configure.ac b/configure.ac
  AC_ARG_ENABLE(libquadmath,
  AS_HELP_STRING([--disable-libquadmath],
    [do not build libquadmath directory]),
-@@ -964,7 +949,7 @@ case "${target}" in
+@@ -947,7 +932,7 @@ case "${target}" in
      ;;
      # The tpf target doesn't support gdb yet.
    *-*-tpf*)
@@ -53,7 +53,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    *-*-uclinux*)
      noconfigdirs="$noconfigdirs target-rda"
-@@ -984,7 +969,7 @@ case "${target}" in
+@@ -967,7 +952,7 @@ case "${target}" in
      noconfigdirs="$noconfigdirs target-newlib target-libgloss"
      ;;
    sh*-*-pe|mips*-*-pe|*arm-wince-pe)
@@ -62,7 +62,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    arc*-*-*)
      noconfigdirs="$noconfigdirs sim"
-@@ -1054,15 +1039,15 @@ case "${target}" in
+@@ -1037,15 +1022,15 @@ case "${target}" in
      ;;
    ia64*-*-elf*)
      # No gdb support yet.
@@ -81,7 +81,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    i[[3456789]]86-w64-mingw*)
      ;;
-@@ -1118,13 +1103,13 @@ case "${target}" in
+@@ -1101,13 +1086,13 @@ case "${target}" in
      ;;
    powerpc*-*-winnt* | powerpc*-*-pe*)
      target_configdirs="$target_configdirs target-winsup"
@@ -97,8 +97,8 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
-@@ -2706,7 +2691,7 @@ if echo " ${target_configdirs} " | grep
-   esac
+@@ -2679,7 +2664,7 @@ if echo " ${target_configdirs} " | grep
+   bootstrap_target_libs=${bootstrap_target_libs}target-libvtv,
  fi
  
 -# Determine whether gdb needs tk/tcl or not.
@@ -106,7 +106,7 @@ diff -Naurp a/configure.ac b/configure.ac
  # Use 'maybe' since enable_gdbtk might be true even if tk isn't available
  # and in that case we want gdb to be built without tk.  Ugh!
  # In fact I believe gdb is the *only* package directly dependent on tk,
-@@ -2714,7 +2699,7 @@ fi
+@@ -2687,7 +2672,7 @@ fi
  # leave out the maybe dependencies when enable_gdbtk is false.  I'm not
  # 100% sure that that's safe though.
  
@@ -117,7 +117,7 @@ diff -Naurp a/configure.ac b/configure.ac
      GDB_TK="" ;;
 diff -Naurp a/MAINTAINERS b/MAINTAINERS
 --- a/MAINTAINERS	2017-04-30 18:15:03.060180194 +0200
-+++ b/MAINTAINERS	2017-12-15 16:11:37.040542259 +0100
++++ b/MAINTAINERS	2018-06-19 12:19:17.925581129 +0200
 @@ -94,10 +94,6 @@ texinfo/texinfo.tex
  	imported at any (reasonable) time.
  	Please not use GCC's texinfo.  Please do not import texinfo.
@@ -130,8 +130,8 @@ diff -Naurp a/MAINTAINERS b/MAINTAINERS
  	cygwin: http://sourceware.org/cygwin
  	Patches to cygwin-patches@cygwin.com.
 diff -Naurp a/Makefile.def b/Makefile.def
---- a/Makefile.def	2017-04-30 18:15:03.060180194 +0200
-+++ b/Makefile.def	2017-12-15 16:11:37.041542269 +0100
+--- a/Makefile.def	2018-06-19 12:18:03.145947093 +0200
++++ b/Makefile.def	2018-06-19 12:19:17.926581138 +0200
 @@ -75,9 +75,6 @@ host_modules= { module= libelf; lib_path
  host_modules= { module= gold; bootstrap=true; };
  host_modules= { module= gprof; };
