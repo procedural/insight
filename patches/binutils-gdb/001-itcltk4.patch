@@ -4,7 +4,7 @@
 diff -Naurp a/configure.ac b/configure.ac
 --- a/configure.ac	2018-06-19 12:18:03.167947274 +0200
 +++ b/configure.ac	2018-06-19 12:19:17.925581129 +0200
-@@ -132,7 +132,7 @@ build_tools="build-texinfo build-flex bu
+@@ -131,7 +131,7 @@ build_tools="build-texinfo build-flex bu
  
  # these libraries are used by various programs built for the host environment
  #f
@@ -13,7 +13,7 @@ diff -Naurp a/configure.ac b/configure.ac
  
  # these tools are built for the host environment
  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
-@@ -252,7 +252,7 @@ fi
+@@ -251,7 +251,7 @@ fi
  case ${with_x} in
    yes | "") ;; # the default value for this tree is that X11 is available
    no)
@@ -22,7 +22,7 @@ diff -Naurp a/configure.ac b/configure.ac
      # We won't be able to build gdbtk without X.
      enable_gdbtk=no 
      ;;
-@@ -406,21 +406,6 @@ case "${host}" in
+@@ -405,21 +405,6 @@ case "${host}" in
      configdirs="$configdirs libtermcap" ;;
  esac
  
@@ -44,7 +44,7 @@ diff -Naurp a/configure.ac b/configure.ac
  AC_ARG_ENABLE(libquadmath,
  AS_HELP_STRING([--disable-libquadmath],
    [do not build libquadmath directory]),
-@@ -947,7 +932,7 @@ case "${target}" in
+@@ -946,7 +931,7 @@ case "${target}" in
      ;;
      # The tpf target doesn't support gdb yet.
    *-*-tpf*)
@@ -53,7 +53,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    *-*-uclinux*)
      noconfigdirs="$noconfigdirs target-rda"
-@@ -967,7 +952,7 @@ case "${target}" in
+@@ -966,7 +951,7 @@ case "${target}" in
      noconfigdirs="$noconfigdirs target-newlib target-libgloss"
      ;;
    sh*-*-pe|mips*-*-pe|*arm-wince-pe)
@@ -62,7 +62,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    arc*-*-*)
      noconfigdirs="$noconfigdirs sim"
-@@ -1037,15 +1022,15 @@ case "${target}" in
+@@ -1036,15 +1021,15 @@ case "${target}" in
      ;;
    ia64*-*-elf*)
      # No gdb support yet.
@@ -81,7 +81,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    i[[3456789]]86-w64-mingw*)
      ;;
-@@ -1101,13 +1086,13 @@ case "${target}" in
+@@ -1100,13 +1085,13 @@ case "${target}" in
      ;;
    powerpc*-*-winnt* | powerpc*-*-pe*)
      target_configdirs="$target_configdirs target-winsup"
@@ -97,7 +97,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
-@@ -2679,7 +2664,7 @@ if echo " ${target_configdirs} " | grep
+@@ -2678,7 +2663,7 @@ if echo " ${target_configdirs} " | grep
    bootstrap_target_libs=${bootstrap_target_libs}target-libvtv,
  fi
  
@@ -106,7 +106,7 @@ diff -Naurp a/configure.ac b/configure.ac
  # Use 'maybe' since enable_gdbtk might be true even if tk isn't available
  # and in that case we want gdb to be built without tk.  Ugh!
  # In fact I believe gdb is the *only* package directly dependent on tk,
-@@ -2687,7 +2672,7 @@ fi
+@@ -2686,7 +2671,7 @@ fi
  # leave out the maybe dependencies when enable_gdbtk is false.  I'm not
  # 100% sure that that's safe though.
  
