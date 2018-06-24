@@ -1,0 +1,190 @@
+# Tracepoint window class methods for Insight
+# Copyright (C) 2018 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License (GPL) as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  local_menu - add entries to local menu
+# ------------------------------------------------------------------
+itcl::body TpWin::local_menu {m} {
+  $m add command -label "Actions" -underline 0 -state disabled
+  $m add separator
+  chain $m
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  update_local_menu - update local menu entries
+# ------------------------------------------------------------------
+itcl::body TpWin::update_local_menu {m n args} {
+  $m entryconfigure "Actions" -command "$this get_actions $n" {*}$args
+  chain $m $n {*}$args
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  header - return column headers list
+# ------------------------------------------------------------------
+itcl::body TpWin::header {} {
+  grid columnconfigure $twin 2 -weight 1
+  grid columnconfigure $twin 4 -weight 1
+  return [list                                                          \
+            [list num "Num"]                                            \
+            [list addr "Address"]                                       \
+            [list file "File"]                                          \
+            [list line "Line"]                                          \
+            [list func "Function"]                                      \
+            [list cond "Condition"]                                     \
+            [list pass "PassCount"]                                     \
+            [list hits "Hits"]]
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  change - update a tracepoint entry
+# ------------------------------------------------------------------
+itcl::body TpWin::change {event n {color yellow}} {
+  set number [$event get number]
+  set file [basename [$event get file]]
+  set cond [$event get condition]
+
+  set balloon ""
+  if {[string length $cond] > 20} {
+    set balloon $cond
+    set cond [string range $cond 0 19]...
+  }
+
+  chain $event $n [pref get gdb/src/trace_fg]
+  $twin.num$n configure -text "$number "
+  $twin.addr$n configure -text "[gdb_CA_to_TAS [$event get address]] "
+  $twin.file$n configure -text "$file "
+  $twin.line$n configure -text "[$event get line] "
+  $twin.func$n configure -text "[$event get function] "
+  $twin.pass$n configure -text "[$event get pass_count] "
+  $twin.cond$n configure -text "$cond "
+  balloon register $twin.cond$n $balloon
+  $twin.hits$n configure -text "[$event get hit_count] "
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  add - add a tracepoint entry
+# ------------------------------------------------------------------
+itcl::body TpWin::add {event} {
+  set file [basename [$event get file]]
+  set n $next_row
+  label $twin.num$n -relief flat -anchor w -font global/fixed
+  label $twin.addr$n -relief flat -anchor w -font global/fixed -bg $bg1
+  label $twin.file$n -relief flat -anchor w -font global/fixed
+  label $twin.line$n -relief flat -anchor w -font global/fixed
+  label $twin.func$n -relief flat -anchor w -font global/fixed
+  label $twin.cond$n -relief flat -anchor w -font global/fixed
+  label $twin.pass$n -relief flat -anchor w -font global/fixed
+  label $twin.hits$n -relief flat -anchor w -font global/fixed
+  chain $event
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  store - stores away the tracepoints in a file of
+#                      gdb commands
+# ------------------------------------------------------------------
+itcl::body TpWin::store {} {
+  set out_file [tk_getSaveFile]
+  if {$out_file == ""} {
+    return
+  }
+  if {[catch {::open $out_file w} outH]} {
+    tk_messageBox -message "Could not open $out_file: $outH"
+    return
+  }
+
+  foreach tracepoint [gdb_get_tracepoint_list] {
+    # This is an lassign
+    foreach {file function line_no address enable_p passcount stepcount
+               thread hit_count cmds cond} \
+      [gdb_get_tracepoint_info $tracepoint] {
+        break
+      }
+
+    set specifier *$address
+    if {$file != ""} {
+      set specifier [file tail $file]:$line_no
+    }
+
+    puts $outH "trace $specifier"
+    store_detail $outH "\$tpnum" tracepoint "actions" $cmds "" $enable_p 0
+  }
+
+  close $outH
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  forall - perform a command on all tracepoints
+# ------------------------------------------------------------------
+itcl::body TpWin::forall {command} {
+  chain $command tracepoint
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD: enable_disable - enable/disable a tracepoint
+# ------------------------------------------------------------------
+itcl::body TpWin::enable_disable {n} {
+  chain $n tracepoint
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  remove - remove a tracepoint
+# ------------------------------------------------------------------
+itcl::body TpWin::remove {n} {
+  chain $n tracepoint
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  tracepoint - Update widget when a tracepoint
+#                   event is received from the backend.
+# ------------------------------------------------------------------
+itcl::body TpWin::tracepoint {event} {
+  set action [$event get action]
+  #debug "tp update $action [$event get number]"
+
+  switch $action {
+    modify  { modify $event }
+    create  { add $event }
+    delete  { delete_point $event }
+    default { dbug E "Unknown tracepoint action: $action" }
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  get_actions - Open a tracepoint action dialog
+# ------------------------------------------------------------------
+itcl::body TpWin::get_actions {r} {
+  set num $index_to_num($r)
+  set info [gdb_get_tracepoint_info $num]
+  lassign $info file func line pc enabled pass_count step_count thread  \
+    hit_count actions cond
+  ManagedWin::open TraceDlg -File [basename $file] -Lines $line
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  goto - show tracepoint in source window
+# ------------------------------------------------------------------
+itcl::body TpWin::goto {r} {
+  set num $index_to_num($r)
+  set info [gdb_get_tracepoint_info $num]
+  set pc [lindex $info 3]
+
+  SrcWin::choose_and_display BROWSE_TAG [gdb_loc *$pc]
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  get_point_list - return current tracepoint list
+# ------------------------------------------------------------------
+itcl::body TpWin::get_point_list {} {
+  return [gdb_get_tracepoint_list]
+}

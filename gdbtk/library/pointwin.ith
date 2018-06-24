@@ -1,0 +1,127 @@
+# Break-/Trace-point window class definition for Insight
+# Copyright (C) 1997, 1998, 1999, 2001 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License (GPL) as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# A point window implements the following widgets:
+# - An optional menu bar with 2 entries: one for the point options and
+#   one for the global options.
+# - A column header
+# - point rows, each of them being prefixed with a enable/disable checkbox.
+# - A row popup menu: the point option menu with an extra entry for the
+#   global options menu.
+#
+# It provides the following features:
+# - Row selection/deselection on row single click.
+# - Popup menu on row right click.
+# - Optionally make point visible in a target window upon double click.
+# - Enabled/disabled checkbox dynamic color.
+# - Support for hiding/showing columns.
+#
+# The constructor options are:
+# - -PointKind kind             Defines the kind of points in the window. This
+#                               is used to form some labels, error messages and
+#                               event classes. Examples: break, trace.
+# - -MenuBar   0|1              Enable/disable the menu bar creation.
+#
+# Subclasses can overload these methods:
+# - header {}                   Returns a list of 2-element lists: column name
+#                               and header text.
+# - global_menu {m}             Add global menu entries to $m. This is
+#                               supposed to chain to parent method to
+#                               complete the menu.
+# - local_menu {m}              Add disabled point menu entries to $m. This is
+#                               supposed to chain to parent method to
+#                               complete the menu.
+# - update_local_menu {m n args} Update local menu $m targeting row $n, using
+#                               $args argument list for configuring entries.
+# - get_point_list {}           Return a list of all points.
+# - add {event}			Add point from event as a new window row. This
+#                               should define the specific column widgets
+#                               named in accordance with the column names
+#                               returned by [header] as $twin.$colname$next_row.
+#                               Parent method should be chained to complete the
+#                               operation.
+# - change {event n color}      Update row $n to match $event. $color defines
+#                               the enabled/disabled checkbox color and can
+#                               be changed before chaining the parent class
+#                               method.
+# - enable_disable {n}          Toggle the enabled state of point at row $n.
+#                               Overloading this method allows chaining
+#                               parent method with two additional arguments
+#                               used to build the gdb command: type is the
+#                               point type and arg as an additional argument
+#                               to the enable command.
+# - remove {n}                  Remove point at row $n. Overloading this method
+#                               allows chaining parent method with an additional
+#                               type argument use to build the gdb delete
+#                               command.
+# - store {}                    Save all points to a file in gdb command
+#                               format.
+# - goto {r}                    Make point at row $r visible in some target
+#                               window.
+# - forall {command}            Execute $command for all points.
+# - breakpoint {event}          Capture breakpoint events.
+# - tracepoint {event}          Capture tracepoint events.
+
+itcl::class PointWin {
+  inherit EmbeddedWin GDBWin
+
+  public {
+    variable PointKind ""               ;# Kind of points (break/trace).
+    variable MenuBar 1                  ;# Whether to display the menu bar.
+
+    method constructor {args}
+    method remove {n {type ""}}
+    method enable_disable {n {type ""} {arg ""}}
+    method restore {}
+    method store {}
+    method forall {command {arg ""}}
+    method show_column {col}
+    method hide_column {col}
+    method select {r}
+    method goto {r}
+    method _select_and_popup {point X Y}
+
+    # GDB Events
+    method breakpoint {event}
+    method tracepoint {event}
+  }
+
+  private {
+    variable Menu                       ;# Menu widget.
+    variable columns                    ;# Column names.
+
+    method create_event {args}
+  }
+
+  protected {
+    variable twin                       ;# The target window.
+    variable selected 0                 ;# Selected row.
+    variable next_row 0                 ;# Next available row.
+    variable bg1                        ;# Background color.
+    variable index_to_num               ;# Row index to point number map.
+    variable enabled                    ;# Point enabled flag array.
+    variable hidden                     ;# Hidden column flags.
+
+    method global_menu {m}
+    method local_menu {m}
+    method update_local_menu {m n args}
+    method header {}
+    method get_point_list {}
+    method add {event}
+    method change {event n {color yellow}}
+    method modify {event {color yellow}}
+    method delete_point {event}
+    method basename {file}
+    method store_detail {outH number type cmdcmd cmds cond enable_p ignore}
+  }
+}

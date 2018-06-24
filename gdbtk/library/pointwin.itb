@@ -1,0 +1,422 @@
+# Break-/Trace-point window for Insight
+# Copyright (C) 1997-2018 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License (GPL) as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# ------------------------------------------------------------------
+#  CONSTRUCTOR:  create the main point window
+# ------------------------------------------------------------------ 
+
+itcl::body PointWin::constructor {args} {
+  eval itk_initialize $args
+  window_name [string toupper ${PointKind}points 0 0]                   \
+              [string toupper [string index $PointKind 0]]Ps
+
+  set bg1 $::Colors(bg)
+
+  # FIXME: The iwidgets scrolled frame is pretty useless.
+  # When we get BLT, use its hiertable to do this.
+  itk_component add sframe {
+    iwidgets::scrolledframe $itk_interior.sf \
+      -hscrollmode dynamic -vscrollmode dynamic
+  }
+
+  set twin [$itk_component(sframe) childsite]
+
+  # Get column names and build header.
+  foreach col [header] {
+    lassign $col name label
+    lappend columns $name
+    set hdrname $twin.${name}0
+    label $hdrname -text $label -relief raised -bd 2 -anchor center \
+          -font global/fixed
+    lappend hdrs $hdrname
+  }
+
+  grid x {*}$hdrs -sticky new
+
+  # The last row must always suck up all the leftover vertical space.
+  set next_row 1
+  grid rowconfigure $twin $next_row -weight 1
+
+  # No columns hidden yet.
+  foreach col [concat "en" $columns] {
+    set hidden($col) 0
+  }
+
+  # Build menu bar.
+  if {$MenuBar} {
+    menu $itk_interior.m -tearoff 0
+    [winfo toplevel $itk_interior] configure -menu $itk_interior.m
+    local_menu [menu $itk_interior.m.points]
+    $itk_interior.m add cascade -menu $itk_interior.m.points            \
+      -label [string toupper ${PointKind}point 0 0] -underline 0
+    global_menu [menu $itk_interior.m.global]
+    $itk_interior.m add cascade -menu $itk_interior.m.global            \
+      -label "Global" -underline 0
+  }
+
+  # Build popup menu.
+  set Menu [menu $itk_interior.pop -tearoff 0]
+  local_menu $Menu
+  menu $Menu.global
+  global_menu $Menu.global
+  $Menu add cascade -menu $Menu.global -label "Global" -underline 0
+
+  # Insert all points.
+  foreach i [get_point_list] {
+    set e [create_event -number $i]
+    $this add $e
+    delete object $e
+  }
+
+  pack $itk_component(sframe) -side left -expand true -fill both
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  create_event - create point event
+# ------------------------------------------------------------------
+itcl::body PointWin::create_event {args} {
+  return [namespace which [[string toupper ${PointKind}pointEvent 0 0]  \
+          \#auto -action create {*}$args]]
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  select - select a row in the grid
+# ------------------------------------------------------------------
+itcl::body PointWin::select {r} {
+  if {$selected} {
+    foreach col $columns {
+      catch {$twin.${col}${selected} configure -fg $::Colors(fg) -bg $bg1}
+    }
+    if {$selected == $r} {
+      update_local_menu $itk_interior.m.points $selected -state disabled
+      set r 0
+    }
+  }
+
+  if {$r} {
+    foreach col $columns {
+      catch {$twin.${col}${r} configure -fg $::Colors(sfg) -bg $::Colors(sbg)}
+    }
+
+    update_local_menu $itk_interior.m.points $r -state normal
+    update_local_menu $Menu $r -state normal
+  }
+
+  set selected $r
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD: enable_disable - enable/disable a point
+# ------------------------------------------------------------------
+itcl::body PointWin::enable_disable {i {type ""} {arg ""}} {
+  select $i
+
+  if {$enabled($i) == "1"} {
+    set command "enable $type $arg"
+  } else {
+    set command "disable $type"
+  }
+
+  append command  " $index_to_num($i)"
+  gdb_cmd "$command"
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  remove - remove a point
+# ------------------------------------------------------------------
+itcl::body PointWin::remove {n {type ""}} {
+  select $n
+  gdb_cmd "delete $type $index_to_num($n)"
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  delete_point - delete a point
+# ------------------------------------------------------------------
+itcl::body PointWin::delete_point {event} {
+  set number [$event get number]
+  for {set i 1} {$i < $next_row} {incr i} {
+    if {$number == $index_to_num($i)} {
+      select 0
+      foreach col [concat en $columns] {
+        grid forget $twin.${col}${i}
+        destroy $twin.${col}${i}
+      }
+      return $i
+    }
+  }
+  return 0
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  breakpoint - Update widget when a breakpoint
+#                   event is received from the backend.
+# ------------------------------------------------------------------
+itcl::body PointWin::breakpoint {event} {}
+
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  tracepoint - Update widget when a tracepoint
+#                   event is received from the backend.
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  forall - perform a command on all points
+# ------------------------------------------------------------------
+itcl::body PointWin::forall {command {arg ""}} {
+  foreach num [get_point_list] {
+    if {$command == "enable"} {
+      for {set i 1} {$i < $next_row} {incr i} {
+        if {$num == $index_to_num($i)} {
+          gdb_cmd "enable $arg $num"
+          break
+        }
+      }
+    } else {
+      gdb_cmd "$command $arg $num"
+    }
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  hide_column - hide named column
+# ------------------------------------------------------------------
+itcl::body PointWin::hide_column {col} {
+  set hidden($col) 1
+  for {set i 0} {$i < $next_row} {incr i} {
+    catch {grid remove $twin.${col}${i}}
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  show_column - show named column
+# ------------------------------------------------------------------
+itcl::body PointWin::show_column {col} {
+  set hidden($col) 0
+  for {set i 0} {$i < $next_row} {incr i} {
+    catch {grid $twin.${col}${i}}
+  }
+} 
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  change - update a point entry
+# ------------------------------------------------------------------
+itcl::body PointWin::change {event n {color yellow}} {
+  global gdbtk_platform
+
+  set enabled($n) [$event get enabled]
+
+  if {$gdbtk_platform(platform) == "windows"} {
+    $twin.en$n configure -fg $color
+  } else {
+    $twin.en$n configure -selectcolor $color
+  }
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  add - add a point entry
+# ------------------------------------------------------------------
+itcl::body PointWin::add {event} {
+  global gdbtk_platform
+
+  set number [$event get number]
+  set i $next_row
+  set enabled($i) [$event get enabled]
+  set enbld [namespace which -variable enabled]
+
+  if {$gdbtk_platform(platform) == "windows"} {
+    checkbutton $twin.en$i -relief flat -variable ${enbld}($i)          \
+      -command "$this enable_disable $i" -activebackground $bg1
+  } else {
+    checkbutton $twin.en$i -relief flat -variable ${enbld}($i)          \
+      -command "$this enable_disable $i" -activebackground $bg1         \
+      -highlightbackground $bg1
+  }
+
+  if {$MenuBar} {
+    foreach col $columns {
+      bind $twin.${col}${i} <1> "$this select $i"
+      bind $twin.${col}${i} <Double-1> "$this goto $i"
+      bind $twin.${col}${i} <3> [code $this _select_and_popup $i %X %Y]
+    }
+  }
+
+  grid $twin.en$i {*}[lmap col $columns {expr {"$twin.${col}${i}"}}]      \
+   -sticky new -ipadx 4 -ipady 2
+
+  # Hide objects in hidden columns.
+  foreach col [concat "en" $columns] {
+    if {$hidden($col)} {
+      grid remove $twin.${col}${i}
+    }
+  }
+
+  # This used to be the last row. Fix it vertically again.
+  grid rowconfigure $twin $i -weight 0
+
+  set index_to_num($i) $number
+  incr next_row
+  grid rowconfigure $twin $next_row -weight 1
+  change $event $i
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  modify - modify a point entry
+# ------------------------------------------------------------------
+itcl::body PointWin::modify {event {color yellow}} {
+  set number [$event get number]
+
+  set n 0
+  for {set i 1} {$i < $next_row} {incr i} {
+    if {$number == $index_to_num($i)} {
+      set n $i
+      break
+    }
+  }
+
+  if {!$n} {
+    debug "ERROR: ${PointKind}point number $number not found!"
+  } else {
+    set enabled($i) [$event get enabled]
+    change $event $i $color
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  restore - restore points from a gdb commands file
+# ------------------------------------------------------------------
+itcl::body PointWin::restore {} {
+  set inH [tk_getOpenFile]
+  if {$inH == ""} {
+    return
+  }
+  forall delete
+  if {[catch {gdb_cmd "source $inH"} err]} {
+    tk_messageBox -message                                              \
+      "Error sourcing in ${PointKind}point file $inH: \"$err\""
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  _select_and_popup - Select the given point and
+#                  popup the options menu at the given location.
+# ------------------------------------------------------------------
+itcl::body PointWin::_select_and_popup {point X Y} {
+  if {$selected != $point} {
+    select $point
+  }
+  tk_popup $Menu $X $Y
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  basename - return basename from path
+# ------------------------------------------------------------------
+itcl::body PointWin::basename {file} {
+  global _files
+
+  if {[info exists _files(short,$file)]} {
+    return $_files(short,$file)
+  }
+  # FIXME.  Really need to do better than this.
+  return [::file tail $file]
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  header - return column headers list
+# ------------------------------------------------------------------
+itcl::body PointWin::header {} {
+  return [list]
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  get_point_list - return current point list
+# ------------------------------------------------------------------
+itcl::body PointWin::get_point_list {} {
+  return [list]
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  global_menu - add entries to global menu
+# ------------------------------------------------------------------
+itcl::body PointWin::global_menu {m} {
+  $m add command -label "Disable All" -underline 0                      \
+    -command "$this forall disable"
+  $m add command -label "Enable All" -underline 0                       \
+    -command "$this forall enable"
+  $m add separator
+  $m add command -label "Remove All" -underline 0                       \
+    -command "$this forall delete"
+  if {[catch {info function store -name}] == 0} {
+    $m add separator
+    set name [string toupper ${PointKind}points 0 0]
+    $m add command -label "Store $name..." -underline 0                 \
+      -command [code $this store]
+    $m add command -label "Restore $name..." -underline 3               \
+        -command [code $this restore]
+  }
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  local_menu - add entries to local menu
+# ------------------------------------------------------------------
+itcl::body PointWin::local_menu {m} {
+  set enbld [namespace which -variable enabled]
+  $m add radio -label "Enabled" -variable ${enbld}($selected) -value 1  \
+    -underline 0 -state disabled
+  $m add radio -label "Disabled" -variable ${enbld}($selected) -value 0 \
+    -underline 0 -state disabled
+  $m add separator
+  $m add command -label "Remove" -underline 0 -state disabled
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  update_local_menu - update local menu entries
+# ------------------------------------------------------------------
+itcl::body PointWin::update_local_menu {m n args} {
+  set enbld [namespace which -variable enabled]
+  $m entryconfigure "Enabled" -variable ${enbld}($n)                    \
+    -command "$this enable_disable $n" {*}$args
+  $m entryconfigure "Disabled" -variable ${enbld}($n)                   \
+    -command "$this enable_disable $n" {*}$args
+  $m entryconfigure "Remove" -command "$this remove $n" {*}$args
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  goto - show point in window
+# ------------------------------------------------------------------
+itcl::body PointWin::goto {r} {
+}
+
+# ------------------------------------------------------------------
+#  PROTECTED METHOD:  store_details - Convenience utility to store
+#                                     point details.
+# ------------------------------------------------------------------
+
+itcl::body PointWin::store_detail {outH number type cmdcmd cmds cond    \
+                                   enable_p ignore} {
+  if {$cmds != {}} {
+    puts $outH "$cmdcmd $number"
+    foreach cmd $cmds {
+      puts $outH $cmd
+    }
+  }
+  if {$cond != ""} {
+    puts $outH "cond $number $cond"
+  }
+  if {!$enable_p} {
+    puts $outH "disable $type $number"
+  }
+  if {$ignore > 0} {
+    puts $outH "ignore $number $ignore"
+  }
+}
