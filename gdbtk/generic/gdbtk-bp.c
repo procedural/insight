@@ -88,6 +88,9 @@ const char *bpdisp[] =
  * Forward declarations
  */
 
+static int get_point_list (int (*) (const struct breakpoint *),
+                           Tcl_Interp *, int, Tcl_Obj * CONST objv[]);
+
 /* Breakpoint-related functions */
 static int gdb_find_bp_at_addr (ClientData, Tcl_Interp *, int,
 				Tcl_Obj * CONST objv[]);
@@ -282,7 +285,7 @@ gdb_find_bp_at_line (ClientData clientData, Tcl_Interp *interp,
  * Tcl Result:
  *   A list with {file, function, line_number, address, type, enabled?,
  *                disposition, ignore_count, {list_of_commands},
- *                condition, thread, hit_count, user_specification}
+ *                condition, thread, hit_count}
  */
 static int
 gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
@@ -291,7 +294,6 @@ gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
   struct symtab_and_line sal;
   int bpnum;
   struct breakpoint *b;
-  struct watchpoint *w;
   const char *funcname, *filename;
   const char *addr_string;
   int isPending = 0;
@@ -311,13 +313,11 @@ gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
     }
 
   b = get_breakpoint (bpnum);
-  if (!b || b->type != bp_breakpoint)
+  if (!b || !is_breakpoint (b))
     {
       gdbtk_set_result (interp, "Breakpoint #%d does not exist.", bpnum);
       return TCL_ERROR;
     }
-
-  w = (is_watchpoint (b)) ? (struct watchpoint *) b : NULL;
 
   isPending = (b->loc == NULL);
   Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
@@ -366,7 +366,7 @@ gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
 			    Tcl_NewIntObj (b->ignore_count));
 
   Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
-			    get_breakpoint_commands ((breakpoint_commands (b)) ? breakpoint_commands (b) : NULL));
+			    get_breakpoint_commands (breakpoint_commands (b)));
 
   Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
 			    Tcl_NewStringObj (b->cond_string, -1));
@@ -375,10 +375,6 @@ gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
 			    Tcl_NewIntObj (b->thread));
   Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
 			    Tcl_NewIntObj (b->hit_count));
-
-  addr_string = w? w->exp_string: event_location_to_string(b->location.get ());
-  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
-			    Tcl_NewStringObj (addr_string, -1));
 
   return TCL_OK;
 }
@@ -456,17 +452,12 @@ get_breakpoint_commands (struct command_line *cmd)
   return obj;
 }
 
-/* This implements the tcl command gdb_get_breakpoint_list
- * It builds up a list of the current breakpoints.
- *
- * Tcl Arguments:
- *    None.
- * Tcl Result:
- *    A list of breakpoint numbers.
+/* gdb_get_breakpoint_list/gdb_get_tracepoint_list common code.
  */
+
 static int
-gdb_get_breakpoint_list (ClientData clientData, Tcl_Interp *interp,
-			 int objc, Tcl_Obj *CONST objv[])
+get_point_list (int (*is_type) (const struct breakpoint *),
+                Tcl_Interp *interp, int objc, Tcl_Obj * CONST objv[])
 {
   Tcl_Obj *new_obj;
   struct breakpoint *b;
@@ -479,7 +470,7 @@ gdb_get_breakpoint_list (ClientData clientData, Tcl_Interp *interp,
 
   ALL_BREAKPOINTS (b)
   {
-    if (b->type == bp_breakpoint)
+    if (is_type (b))
       {
 	new_obj = Tcl_NewIntObj (b->number);
 	Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr, new_obj);
@@ -487,6 +478,22 @@ gdb_get_breakpoint_list (ClientData clientData, Tcl_Interp *interp,
   }
 
   return TCL_OK;
+}
+
+/* This implements the tcl command gdb_get_breakpoint_list
+ * It builds up a list of the current breakpoints.
+ *
+ * Tcl Arguments:
+ *    None.
+ * Tcl Result:
+ *    A list of breakpoint numbers.
+ */
+static int
+gdb_get_breakpoint_list (ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
+{
+  (void) clientData;
+  return get_point_list (is_breakpoint, interp, objc, objv);
 }
 
 /* This implements the tcl command "gdb_set_bp"
@@ -630,25 +637,27 @@ breakpoint_notify (int num, const char *action)
 
   b = get_breakpoint (num);
   if (b == NULL)
-    {
-      b = get_tracepoint (num);
-      if (b == NULL)
-	return;
-    }
+    return;
 
-  if (b->number < 0
-      /* FIXME: should not be so restrictive... */
-      || (b->type != bp_breakpoint
-	  && b->type != bp_tracepoint
-	  && b->type != bp_fast_tracepoint))
+  if (b->number < 0)
     return;
 
   /* We ensure that ACTION contains no special Tcl characters, so we
      can do this.  */
-  if (b->type == bp_breakpoint)
-    buf = string_printf ("gdbtk_tcl_breakpoint %s %d", action, b->number);
-  else
-    buf = string_printf ("gdbtk_tcl_tracepoint %s %d", action, b->number);
+  switch (b->type)
+    {
+    case bp_breakpoint:
+    case bp_hardware_breakpoint:
+      buf = string_printf ("gdbtk_tcl_breakpoint %s %d", action, b->number);
+      break;
+    case bp_tracepoint:
+    case bp_fast_tracepoint:
+    case bp_static_tracepoint:
+      buf = string_printf ("gdbtk_tcl_tracepoint %s %d", action, b->number);
+      break;
+    default:
+      return;
+    }
 
   if (Tcl_Eval (gdbtk_tcl_interp, buf.c_str ()) != TCL_OK)
     report_error ();
@@ -747,7 +756,7 @@ gdb_get_action_list (Tcl_Interp *interp,
  *   tracepoint_number
  * Tcl Result:
  *   A list with {file, function, line_number, address, enabled?, pass_count,
- *                step_count, thread, hit_count, {list_of_commands}}
+ *                step_count, thread, hit_count, {list_of_commands}, condition}
  */
 static int
 gdb_get_tracepoint_info (ClientData clientData, Tcl_Interp *interp,
@@ -812,30 +821,19 @@ gdb_get_tracepoint_info (ClientData clientData, Tcl_Interp *interp,
   if (bp->commands)
     gdb_get_action_list (interp, action_list, breakpoint_commands (bp));
   Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, action_list);
+  Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr,
+			    Tcl_NewStringObj (bp->cond_string, -1));
 
   return TCL_OK;
 }
 
 /* return a list of all tracepoint numbers in interpreter */
 static int
-gdb_get_tracepoint_list (ClientData clientData,
-			 Tcl_Interp *interp,
-			 int objc,
-			 Tcl_Obj *CONST objv[])
+gdb_get_tracepoint_list (ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
 {
-  VEC(breakpoint_p) *tp_vec = NULL;
-  int ix;
-  struct breakpoint *tp;
-
-  Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
-
-  tp_vec = all_tracepoints ();
-  for (ix = 0; VEC_iterate (breakpoint_p, tp_vec, ix, tp); ix++)
-    Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr,
-			      Tcl_NewIntObj (tp->number));
-  VEC_free (breakpoint_p, tp_vec);
-
-  return TCL_OK;
+  (void) clientData;
+  return get_point_list (is_tracepoint, interp, objc, objv);
 }
 
 static int

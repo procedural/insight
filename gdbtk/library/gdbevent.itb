@@ -31,9 +31,8 @@ itcl::body BreakpointEvent::get {what} {
     condition    { return $_condition }
     thread       { return $_thread }
     hit_count    { return $_hit_count }
-    user_specification { return $_user_specification }
 
-    default { error "unknown event data \"$what\": should be: action|number|file|function|line|address|type|enabled|disposition|ignore_count|commands|condition|thread|hit_count|user_specification" }
+    default { error "unknown event data \"$what\": should be: action|number|file|function|line|address|type|enabled|disposition|ignore_count|commands|condition|thread|hit_count" }
   }
 }
 
@@ -54,7 +53,6 @@ itcl::body BreakpointEvent::_init {} {
     set _condition    {}
     set _thread       {}
     set _hit_count    {}
-    set _user_specification {}
   } else {
     lassign $bpinfo \
       _file         \
@@ -68,8 +66,7 @@ itcl::body BreakpointEvent::_init {} {
       _commands     \
       _condition    \
       _thread       \
-      _hit_count    \
-      _user_specification
+      _hit_count
   }
 }
 
@@ -97,8 +94,9 @@ itcl::body TracepointEvent::get {what} {
     thread     { return $_thread }
     hit_count  { return $_hit_count }
     actions    { return $_actions }
+    condition  { return $_condition }
 
-    default { error "unknown event data \"$what\": should be: action|number|file|function|line|address|pass_count|step_count|thread|hit_count|actions" }
+    default { error "unknown event data \"$what\": should be: action|number|file|function|line|address|pass_count|step_count|thread|hit_count|actions|condition" }
   }
 }
 
@@ -117,6 +115,7 @@ itcl::body TracepointEvent::_init {} {
     set _thread       {}
     set _hit_count    {}
     set _actions      {}
+    set _condition    {}
   } else {
     lassign $tpinfo \
       _file         \
@@ -128,7 +127,8 @@ itcl::body TracepointEvent::_init {} {
       _step_count   \
       _thread       \
       _hit_count    \
-      _actions
+      _actions      \
+      _condition
   }
 }
 

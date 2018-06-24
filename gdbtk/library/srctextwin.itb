@@ -2348,8 +2348,8 @@ itcl::body SrcTextWin::showBPBalloon {win x y} {
   set need_lf 0
   foreach b $bps {
     set bpinfo [gdb_get_breakpoint_info $b]
-    lassign $bpinfo file func linenum addr type enabled disposition \
-      ignore_count commands cond thread hit_count user_specification
+    lassign $bpinfo file func linenum addr type enabled disposition     \
+      ignore_count commands cond thread hit_count
     set file [lindex [file split $file] end]
     if {$enabled} {
       set enabled "ENA"
@@ -2445,7 +2445,7 @@ itcl::body SrcTextWin::showTPBalloon {win x y} {
   foreach b $bps {
     set tpinfo [gdb_get_tracepoint_info $b]
     lassign $tpinfo file func linenum addr enabled pass_count \
-      step_count thread hit_count actions
+      step_count thread hit_count actions cond
     set file [lindex [file split $file] end]
     if {$enabled} {
       set enabled "ENA"

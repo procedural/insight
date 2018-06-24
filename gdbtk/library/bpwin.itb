@@ -307,14 +307,12 @@ itcl::body BpWin::bp_store {} {
   foreach breakpoint [gdb_get_breakpoint_list] {
     # This is an lassign
     foreach {file function line_no address type \
-	       enable_p disp ignore cmds cond thread hit_count user_spec} \
+	       enable_p disp ignore cmds cond thread hit_count} \
       [gdb_get_breakpoint_info $breakpoint] {
 	break
       }
 
-    if {$user_spec != ""} {
-      set bp_specifier $user_spec
-    } elseif {$file != ""} {
+    if {$file != ""} {
       set filename [file tail $file]
       set bp_specifier $filename:$line_no
     } else {
@@ -563,7 +561,7 @@ itcl::body BpWin::bp_type { i } {
   #debug "bp_type $i $bpnum"
   set bpinfo [gdb_get_breakpoint_info $bpnum]
   lassign $bpinfo file func line pc type enabled disposition \
-    ignore_count commands cond thread hit_count user_spec
+    ignore_count commands cond thread hit_count
   bp_select $i
   switch $disposition {
     delete {
@@ -691,7 +689,7 @@ itcl::body BpWin::get_actions {bpnum} {
   set bpnum $index_to_bpnum($bpnum)
   set bpinfo [gdb_get_tracepoint_info $bpnum]
   lassign $bpinfo file func line pc enabled pass_count \
-    step_count thread hit_count actions
+    step_count thread hit_count actions cond
 
   set filename [::file tail $file]
   ManagedWin::open TraceDlg -File $filename -Lines $line

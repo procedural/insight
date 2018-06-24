@@ -55,7 +55,7 @@ namespace eval Session {
     foreach bp_num [gdb_get_breakpoint_list] {
       lassign [gdb_get_breakpoint_info $bp_num] file function line_number \
 	address type enabled disposition ignore_count command_list \
-	condition thread hit_count user_specification
+	condition thread hit_count
 
       # These breakpoints are set when debugging GDB with itself.
       # Ignore them so they don't accumulate. They get set again
@@ -66,46 +66,18 @@ namespace eval Session {
 	}
       }
 
-      switch -glob -- $type {
-	"breakpoint" -
-	"hw breakpoint" {
-	  if {$disposition == "delete"} {
-	    set cmd tbreak
-	  } else {
-	    set cmd break
-	  }
+      if {$disposition == "delete"} {
+	set cmd tbreak
+      } else {
+	set cmd break
+      }
 
-	  append cmd " "
-	  if {$user_specification != ""} {
-	    append cmd "$user_specification"
-	  } elseif {$file != ""} {
-	    # BpWin::bp_store uses file tail here, but I think that is
-	    # wrong.
-	    append cmd "$file:$line_number"
-	  } else {
-	    append cmd "*$address"
-	  }
-	}
-	"watchpoint" -
-	"hw watchpoint" {
-	  set cmd watch
-	  if {$user_specification != ""} {
-	    append cmd " $user_specification"
-	  } else {
-	    # There's nothing sensible to do.
-	    continue
-	  }
-	}
-
-	"catch*" {
-	  # FIXME: Don't know what to do.
-	  continue
-	}
-
-	default {
-	  # Can't serialize anything other than those listed above.
-	  continue
-	}
+      append cmd " "
+      if {$file != ""} {
+	# BpWin::bp_store uses file tail here, but I think that is wrong.
+	append cmd "$file:$line_number"
+      } else {
+	append cmd "*$address"
       }
 
       lappend result [list $cmd $enabled $condition $command_list]

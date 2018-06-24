@@ -201,7 +201,7 @@ itcl::class TraceDlg {
       if {!$multiline} {
 	set stuff [gdb_get_tracepoint_info $Number]
 	# 0=file 1=func 2=line 3=addr 4=disposition 5=passCount 6=stepCount
-	# 7=thread 8=hitCount 9=actions
+	# 7=thread 8=hitCount 9=actions 10=condition
 	set enabled [lindex $stuff 4]
 	set _TPassCount [lindex $stuff 5]
 	set thread      [lindex $stuff 7]
