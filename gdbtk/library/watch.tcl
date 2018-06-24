@@ -102,7 +102,10 @@ itcl::class WatchTree {
   # DESTRUCTOR - delete watch variable tree
   # ------------------------------------------------------------------
   destructor {
-    remove all
+      foreach var $rootlist {
+        $var delete
+      }
+      set rootlist {}
   }
 }
 
@@ -219,7 +222,6 @@ itcl::class WatchWin {
   # ------------------------------------------------------------------
   destructor {
     debug
-    delete object $tree
     set tree {}
 
     # Remove this window and all hooks
