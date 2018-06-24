@@ -16,10 +16,11 @@ itcl::class VarTree {
 
   public variable type "watch"
 
-  private {
+  protected {
     # list of root variables in tree
     variable rootlist {}
-
+  }
+  private {
     # mapping of varobj to canvas items
     variable var_to_items
     variable item_to_var
@@ -52,7 +53,6 @@ itcl::class VarTree {
     method buildlayer {tlist n}
     method drawselection {}
     method clicked {w x y open}
-    method setselection {var}
     method closed {name}
     method open {name}
     method close {name}
@@ -73,5 +73,6 @@ itcl::class VarTree {
     method add {varobj}
     method remove {varobj}
     method update {{check 0}}
+    method setselection {var}
   }
 }

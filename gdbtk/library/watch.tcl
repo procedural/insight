@@ -16,6 +16,97 @@
 # Implements watch windows for gdb.
 # ----------------------------------------------------------------------
 
+
+# ----------------------------------------------------------------------
+# VarTree subclass for watch window private use.
+# ----------------------------------------------------------------------
+
+itcl::class WatchTree {
+  inherit VarTree
+
+
+  # ------------------------------------------------------------------
+  # METHOD: add - add a variable to the watch tree
+  # ------------------------------------------------------------------
+  method add {name {frame ""}} {
+    debug "Trying to add \"$name\" to watch"
+
+    # Strip all the junk after the first \n
+    set var [split $name \n]
+    set var [lindex $var 0]
+    set var [split $var =]
+    set var [lindex $var 0]
+
+    # Strip out leading/trailing +, -, ;, spaces, commas
+    set var [string trim $var +-\;\ \r\n,]
+
+    # Make sure that we have a valid variable
+    set err [catch {gdb_cmd "set variable 0,$var"} errTxt]
+    if {$err} {
+      dbug W "ERROR adding variable: $errTxt"
+      ManagedWin::open WarningDlg -transient \
+	-over $this -message [list $errTxt] -ignorable "watchvar"
+    } else {
+      if {[string index $var 0] == "\$"} {
+	# We must make a special attempt at verifying convenience
+	# variables.. Specifically, these are printed as "void"
+	# when they are not defined. So if a user type "$_I_made_tbis_up",
+	# gdb responds with the value "void" instead of an error
+	catch {gdb_cmd "p $var"} msg
+	set msg [split $msg =]
+	set msg [string trim [lindex $msg 1] \ \r\n]
+	if {$msg == "void"} {
+	  return ""
+	}
+      }
+
+      debug "In add, going to add $name"
+      # make one last attempt to get errors
+      set err [catch {set foo($name) 1}]
+      debug "err1=$err"
+      set err [expr {$err + [catch {expr {$foo($name) + 1}}]}]
+      debug "err2=$err"
+      if {!$err} {
+        if {$frame != ""} {
+          set var [gdb_variable create -expr $name -frame $frame]
+        } else {
+	  set var [gdb_variable create -expr $name]
+        }
+	debug "var=$var"
+	chain $var
+	return $var
+      }
+    }
+    return ""
+  }
+
+
+  method remove {var} {
+    if {$var == "all"} {
+      foreach var $rootlist {
+        remove $var
+      }
+    } elseif {$var != ""} {
+      chain $var
+      $var delete
+    }
+  }
+
+
+  method in_tree {entry} {
+    return [expr {[lsearch -exact $rootlist $entry] != -1}]
+  }
+
+
+  # ------------------------------------------------------------------
+  # DESTRUCTOR - delete watch variable tree
+  # ------------------------------------------------------------------
+  destructor {
+    remove all
+  }
+}
+
+
 itcl::class WatchWin {
   inherit EmbeddedWin GDBWin
   # ------------------------------------------------------------------
@@ -59,9 +150,6 @@ itcl::class WatchWin {
     debug
     cursor {}
     set Running 0
-    foreach var $Watched {
-      $var delete
-    }
     $tree remove all
   }
 
@@ -84,7 +172,7 @@ itcl::class WatchWin {
     set treeFrame  [frame $f.top]
     set entryFrame [frame $f.expr]
 
-    set tree [VarTree $treeFrame.tree]
+    set tree [WatchTree $treeFrame.tree]
     pack $tree -expand yes -fill both
 
     set Entry [entry $entryFrame.ent -font global/fixed]
@@ -131,26 +219,26 @@ itcl::class WatchWin {
   # ------------------------------------------------------------------
   destructor {
     debug
+    delete object $tree
     set tree {}
 
     # Remove this window and all hooks
     remove_hook gdb_no_inferior_hook "$this no_inferior"
     remove_hook gdb_clear_file_hook [code $this clear_file]
     remove_hook file_changed_hook [code $this clear_file]
-
-    foreach var $Watched {
-      $var delete
-    }
   }
 
   method remove {entry} {
     debug $entry
+    $tree remove $entry
+  }
 
-    # Remove this entry from the list of watched variables
-    set Watched [lremove $Watched $entry]
+  method select {entry} {
+    $tree setselection $entry
+  }
 
-    $entry remove
-    $entry delete
+  method watched {entry} {
+    return [$tree in_tree $entry]
   }
 
 
@@ -162,57 +250,11 @@ itcl::class WatchWin {
   # ------------------------------------------------------------------
   # METHOD: add - add a variable to the watch window
   # ------------------------------------------------------------------
-  method add {name} {
-    debug "Trying to add \"$name\" to watch"
-
-    # Strip all the junk after the first \n
-    set var [split $name \n]
-    set var [lindex $var 0]
-    set var [split $var =]
-    set var [lindex $var 0]
-
-    # Strip out leading/trailing +, -, ;, spaces, commas
-    set var [string trim $var +-\;\ \r\n,]
-
-    # Make sure that we have a valid variable
-    set err [catch {gdb_cmd "set variable 0,$var"} errTxt]
-    if {$err} {
-      dbug W "ERROR adding variable: $errTxt"
-      ManagedWin::open WarningDlg -transient \
-	-over $this -message [list $errTxt] -ignorable "watchvar"
-    } else {
-      if {[string index $var 0] == "\$"} {
-	# We must make a special attempt at verifying convenience
-	# variables.. Specifically, these are printed as "void"
-	# when they are not defined. So if a user type "$_I_made_tbis_up",
-	# gdb responds with the value "void" instead of an error
-	catch {gdb_cmd "p $var"} msg
-	set msg [split $msg =]
-	set msg [string trim [lindex $msg 1] \ \r\n]
-	if {$msg == "void"} {
-	  return 0
-	}
-      }
-
-      debug "In add, going to add $name"
-      # make one last attempt to get errors
-      set err [catch {set foo($name) 1}]
-      debug "err1=$err"
-      set err [expr {$err + [catch {expr {$foo($name) + 1}}]}]
-      debug "err2=$err"
-      if {!$err} {
-	set var [gdb_variable create -expr $name]
-	debug "var=$var"
-	$tree add $var
-	lappend Watched $var
-	return 1
-      }
-    }
-    return 0
+  method add {name {frame ""}} {
+    return [$tree add $name $frame]
   }
 
   protected variable Entry
-  protected variable Watched {}
   protected variable tree
   protected variable Running
 }
