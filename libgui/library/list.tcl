@@ -63,3 +63,15 @@ proc lvarcat {listVar args} {
     eval eval lappend var $args
   }
 }
+
+# Map all list elements
+proc lmap {args} {
+  set _args $args
+  set _body [lvarpop _args end]
+  foreach {_var _} $_args {
+    upvar $_var $_var
+  }
+  set _result {}
+  foreach {*}$_args { lappend _result [uplevel 1 $_body] }
+  return $_result
+}
