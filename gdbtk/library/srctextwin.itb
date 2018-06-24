@@ -687,6 +687,7 @@ itcl::body SrcTextWin::config_win {win {asm S}} {
   bind_plain_key $win Control-k "$this do_key kod"
   if { !$Tracing } {
     bind_plain_key $win Control-b "$this do_key breakpoints"
+    bind_plain_key $win Control-z "$this do_key watchpoints"
   } else {
     bind_plain_key $win Control-t "$this do_key tracepoints"
     bind_plain_key $win Control-u "$this do_key tdump"
@@ -1502,6 +1503,13 @@ itcl::body SrcTextWin::tracepoint {tp_event} {
 }
 
 # ------------------------------------------------------------------
+#  PUBLIC METHOD:  watchpoint - Handle a watchpoint create, delete,
+#                   modify event from the backend.
+# ------------------------------------------------------------------
+itcl::body SrcTextWin::watchpoint {event} {}
+
+
+# ------------------------------------------------------------------
 #  METHOD:  bp - set and remove breakpoints
 #
 #  if $addr is valid, the breakpoint will be set in the assembly or
@@ -2160,6 +2168,8 @@ itcl::body SrcTextWin::do_source_popup { X Y x y } {
       if {$is_var} {
 	$popups(source) add command -label "Add $variable to Watch" \
 	  -command [list $this addToWatch $variable]
+	$popups(source) add command -label "Set Watchpoint at $variable" \
+	  -command [list gdb_cmd "watch $variable"]
 	$popups(source) add command -label "Dump Memory at $variable" \
 	  -command [list ManagedWin::open MemWin -force -addr_exp $variable]
 	$popups(source) add command -label "Set Breakpoint at $variable" \
@@ -2199,6 +2209,7 @@ itcl::body SrcTextWin::do_key {key} {
       watch        { ManagedWin::open WatchWin }
       locals       { ManagedWin::open LocalsWin }
       breakpoints  { ManagedWin::open BpWin }
+      watchpoints  { ManagedWin::open WpWin }
       console      { ManagedWin::open Console }
       step         { $parent inferior step }
       next         { $parent inferior next }

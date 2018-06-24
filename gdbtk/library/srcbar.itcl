@@ -1,5 +1,5 @@
 # SrcBar
-# Copyright (C) 2001-2015 Red Hat, Inc.
+# Copyright (C) 2001-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -305,6 +305,9 @@ itcl::class SrcBar {
       $Menu add command Other "Breakpoints" \
 	{ManagedWin::open BpWin} \
 	-underline 0 -accelerator "Ctrl+B"
+      $Menu add command Other "Watchpoints" \
+	{ManagedWin::open WpWin} \
+	-underline 0 -accelerator "Ctrl+Z"
     }
 
     if {[pref get gdb/mode]} {
@@ -676,6 +679,8 @@ itcl::class SrcBar {
     if {[pref get gdb/control_target]} {
       $Tool add button bp Other {ManagedWin::open BpWin} \
                             "Breakpoints (Ctrl+B)" -image bp_img
+      $Tool add button wp Other {ManagedWin::open WpWin} \
+                            "Watchpoints (Ctrl+Z)" -image wp_img
     }
 
     if {[pref get gdb/mode]} {
@@ -727,7 +732,7 @@ itcl::class SrcBar {
     }
     set _loaded_images 1
 
-    lappend imgs console reg stack vars watch memory bp
+    lappend imgs console reg stack vars watch memory bp wp
     foreach name $imgs {
       image create photo ${name}_img -file [file join $gdb_ImageDir ${name}.gif]
     }

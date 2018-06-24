@@ -1,5 +1,5 @@
 # GDB event class implementations for Insight.
-# Copyright (C) 2001 Red Hat, Inc.
+# Copyright (C) 2001-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -135,6 +135,68 @@ itcl::body TracepointEvent::_init {} {
 # When the tracepoint number for the event changes,
 # update the private data in the event.
 itcl::configbody TracepointEvent::number {
+  _init
+}
+
+# ------------------------------------------------------------
+#  PUBLIC METHOD:  get - Retrieve data about the event
+# ------------------------------------------------------------
+itcl::body WatchpointEvent::get {what} {
+
+  switch $what {
+    action             { return $action }
+    number             { return $number }
+    address            { return $_address }
+    type               { return $_type }
+    enabled            { return $_enabled }
+    ignore_count       { return $_ignore_count }
+    commands           { return $_commands }
+    condition          { return $_condition }
+    thread             { return $_thread }
+    mask               { return $_mask }
+    hit_count          { return $_hit_count }
+    user_specification { return $_user_specification }
+    frame              { return $_frame }
+
+    default { error "unknown event data \"$what\": should be: action|number|address|type|enabled|ignore_count|commands|condition|thread|mask|hit_count|user_specification|frame" }
+  }
+}
+
+# ------------------------------------------------------------
+#  PRIVATE METHOD:  _init - Initialize all private data
+# ------------------------------------------------------------
+itcl::body WatchpointEvent::_init {} {
+  if {[catch {gdb_get_watchpoint_info $number} wpinfo]} {
+    set _address      {}
+    set _type         {}
+    set _enabled      {}
+    set _ignore_count {}
+    set _commands     {}
+    set _condition    {}
+    set _thread       {}
+    set _mask         {}
+    set _hit_count    {}
+    set _user_specification {}
+    set _frame        {}
+  } else {
+    lassign $wpinfo \
+      _address      \
+      _type         \
+      _enabled      \
+      _ignore_count \
+      _commands     \
+      _condition    \
+      _thread       \
+      _mask         \
+      _hit_count    \
+      _user_specification \
+      _frame
+  }
+}
+
+# When the watchpoint number for the event changes,
+# update the private data in the event.
+itcl::configbody WatchpointEvent::number {
   _init
 }
 

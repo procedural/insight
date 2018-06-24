@@ -83,6 +83,36 @@ namespace eval Session {
       lappend result [list $cmd $enabled $condition $command_list]
     }
 
+    foreach bp_num [gdb_get_watchpoint_list] {
+      lassign [gdb_get_watchpoint_info $bp_num] address type enabled    \
+        ignore_count command_list condition thread mask hit_count       \
+        user_spec frame
+
+      switch -glob -- $type {
+        "acc watchpoint" {
+          set cmd awatch
+        }
+        "read watchpoint" {
+          set cmd rwatch
+        }
+        "watchpoint" -
+        "hw watchpoint" {
+          set cmd watch
+        }
+	default {
+	  # Can't serialize anything other than those listed above.
+	  continue
+	}
+      }
+      append cmd " $user_spec"
+
+      if {$mask != -1} {
+        append cmd " mask " $mask
+      }
+
+      lappend result [list $cmd $enabled $condition $command_list]
+    }
+
     return $result
   }
 

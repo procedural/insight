@@ -523,6 +523,17 @@ proc gdbtk_tcl_tracepoint {action tpnum} {
 }
 
 # ------------------------------------------------------------------
+# PROC: gdbtk_tcl_watchpoint - A watchpoint was changed -- notify
+#                               gui.
+# ------------------------------------------------------------------
+proc gdbtk_tcl_watchpoint {action num} {
+#  debug "WATCHPOINT: $action $num"
+  set e [WatchpointEvent \#auto -action $action -number $num]
+  GDBEventHandler::dispatch $e
+  delete object $e
+}
+
+# ------------------------------------------------------------------
 # PROC: gdbtk_tcl_trace_find_hook -
 # ------------------------------------------------------------------
 proc gdbtk_tcl_trace_find_hook {tfnum tpnum} {

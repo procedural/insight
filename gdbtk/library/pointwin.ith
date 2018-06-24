@@ -1,4 +1,4 @@
-# Break-/Trace-point window class definition for Insight
+# Break-/Trace-/Watch-point window class definition for Insight
 # Copyright (C) 1997, 1998, 1999, 2001 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -29,7 +29,7 @@
 # The constructor options are:
 # - -PointKind kind             Defines the kind of points in the window. This
 #                               is used to form some labels, error messages and
-#                               event classes. Examples: break, trace.
+#                               event classes. Examples: break, trace, watch.
 # - -MenuBar   0|1              Enable/disable the menu bar creation.
 #
 # Subclasses can overload these methods:
@@ -71,12 +71,13 @@
 # - forall {command}            Execute $command for all points.
 # - breakpoint {event}          Capture breakpoint events.
 # - tracepoint {event}          Capture tracepoint events.
+# - watchpoint {event}          Capture watchpoint events.
 
 itcl::class PointWin {
   inherit EmbeddedWin GDBWin
 
   public {
-    variable PointKind ""               ;# Kind of points (break/trace).
+    variable PointKind ""               ;# Kind of points (break/trace/watch).
     variable MenuBar 1                  ;# Whether to display the menu bar.
 
     method constructor {args}
@@ -94,6 +95,7 @@ itcl::class PointWin {
     # GDB Events
     method breakpoint {event}
     method tracepoint {event}
+    method watchpoint {event}
   }
 
   private {

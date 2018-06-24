@@ -1,4 +1,4 @@
-# Break-/Trace-point window for Insight
+# Break-/Trace-/Watch-point window for Insight
 # Copyright (C) 1997-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -168,6 +168,13 @@ itcl::body PointWin::breakpoint {event} {}
 #  PUBLIC METHOD:  tracepoint - Update widget when a tracepoint
 #                   event is received from the backend.
 # ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  watchpoint - Update widget when a watchpoint
+#                   event is received from the backend.
+# ------------------------------------------------------------------
+itcl::body PointWin::watchpoint {event} {}
 
 
 # ------------------------------------------------------------------

@@ -1,5 +1,5 @@
 # Local preferences functions for Insight.
-# Copyright (C) 1997-2015 Red Hat, Inc.
+# Copyright (C) 1997-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -396,6 +396,12 @@ proc pref_set_defaults {} {
 
   # BP (breakpoint)
   pref define gdb/bp/show_threads         0
+
+  # WP (watchpoint)
+  pref define gdb/wp/show_threads         0
+  pref define gdb/wp/wp_fg                red
+  pref define gdb/wp/wp_acc_fg            orange
+  pref define gdb/wp/wp_w_fg              yellow
 
   # Help
   pref define gdb/help/browsername	""

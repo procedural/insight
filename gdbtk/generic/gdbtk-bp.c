@@ -25,6 +25,8 @@
 #include "linespec.h"
 #include "breakpoint.h"
 #include "tracepoint.h"
+#include "target.h"
+#include "frame.h"
 #include "location.h"
 #include <string.h>
 #include <tcl.h>
@@ -90,6 +92,7 @@ const char *bpdisp[] =
 
 static int get_point_list (int (*) (const struct breakpoint *),
                            Tcl_Interp *, int, Tcl_Obj * CONST objv[]);
+static int have_masked_watchpoints (void);
 
 /* Breakpoint-related functions */
 static int gdb_find_bp_at_addr (ClientData, Tcl_Interp *, int,
@@ -119,7 +122,15 @@ static Tcl_Obj *get_breakpoint_commands (struct command_line *cmd);
 
 static int tracepoint_exists (const char *args);
 
-/* Breakpoint/tracepoint events and related functions */
+/* Watchpoint-related functions */
+static int gdb_get_watchpoint_list (ClientData, Tcl_Interp *, int,
+				    Tcl_Obj * CONST objv[]);
+static int gdb_get_watchpoint_info (ClientData, Tcl_Interp *, int,
+				    Tcl_Obj * CONST[]);
+static int gdb_have_masked_watchpoints (ClientData, Tcl_Interp *, int,
+                                        Tcl_Obj * CONST[]);
+
+/* Breakpoint/tracepoint/watchpoint events and related functions */
 
 void gdbtk_create_breakpoint (struct breakpoint *);
 void gdbtk_delete_breakpoint (struct breakpoint *);
@@ -156,6 +167,15 @@ Gdbtk_Breakpoint_Init (Tcl_Interp *interp)
 			(ClientData) gdb_trace_status,	NULL);
   Tcl_CreateObjCommand (interp, "gdb_tracepoint_exists", gdbtk_call_wrapper,
 			(ClientData) gdb_tracepoint_exists_command, NULL);
+
+  /* Watchpoint commands */
+  Tcl_CreateObjCommand (interp, "gdb_get_watchpoint_list", gdbtk_call_wrapper,
+			(ClientData) gdb_get_watchpoint_list, NULL);
+  Tcl_CreateObjCommand (interp, "gdb_get_watchpoint_info", gdbtk_call_wrapper,
+			(ClientData) gdb_get_watchpoint_info, NULL);
+  Tcl_CreateObjCommand (interp, "gdb_have_masked_watchpoints",
+                        gdbtk_call_wrapper,
+                        (ClientData) gdb_have_masked_watchpoints, NULL);
 
   return TCL_OK;
 }
@@ -452,7 +472,8 @@ get_breakpoint_commands (struct command_line *cmd)
   return obj;
 }
 
-/* gdb_get_breakpoint_list/gdb_get_tracepoint_list common code.
+/* gdb_get_breakpoint_list/gdb_get_tracepoint_list/gdb_get_watchpoint_list
+ * common code.
  */
 
 static int
@@ -654,6 +675,12 @@ breakpoint_notify (int num, const char *action)
     case bp_fast_tracepoint:
     case bp_static_tracepoint:
       buf = string_printf ("gdbtk_tcl_tracepoint %s %d", action, b->number);
+      break;
+    case bp_watchpoint:
+    case bp_hardware_watchpoint:
+    case bp_read_watchpoint:
+    case bp_access_watchpoint:
+      buf = string_printf ("gdbtk_tcl_watchpoint %s %d", action, b->number);
       break;
     default:
       return;
@@ -914,5 +941,129 @@ gdb_tracepoint_exists_command (ClientData clientData,
   args = Tcl_GetStringFromObj (objv[1], NULL);
 
   Tcl_SetIntObj (result_ptr->obj_ptr, tracepoint_exists (args));
+  return TCL_OK;
+}
+
+/*
+ * This section contains the commands that deal with watchpoints.
+ */
+
+/* This implements the tcl command gdb_get_watchpoint_info
+ *
+ * Tcl Arguments:
+ *   watchpoint_number
+ * Tcl Result:
+ *   A list with {address, type, enable? ignore_count, {list of commands},
+ *     condition, thread, mask, hit_count, user_spec, frame}
+ */
+static int
+gdb_get_watchpoint_info (ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
+{
+  int wpnum;
+  int mask;
+  std::string frame;
+  struct frame_info *finfo;
+  struct watchpoint *wp;
+  struct breakpoint *bp;
+
+  if (objc != 2)
+    {
+      Tcl_WrongNumArgs (interp, 1, objv, "wpnum");
+      return TCL_ERROR;
+    }
+
+  if (Tcl_GetIntFromObj (NULL, objv[1], &wpnum) != TCL_OK)
+    {
+      result_ptr->flags |= GDBTK_IN_TCL_RESULT;
+      return TCL_ERROR;
+    }
+
+  bp = get_breakpoint (wpnum);
+  if (!bp || !is_watchpoint (bp))
+    {
+      gdbtk_set_result (interp, "Watchpoint #%d does not exist", wpnum);
+      return TCL_ERROR;
+    }
+
+  wp = (struct watchpoint *) bp;
+  mask = wp->hw_wp_mask;
+  if (bp->type != bp_hardware_breakpoint || !mask ||
+      !have_masked_watchpoints ())
+    mask = ~0;
+
+  finfo = frame_find_by_id (wp->watchpoint_frame);
+  if (finfo)
+    {
+      CORE_ADDR frm = get_frame_base_address (finfo);
+
+      if (frm)
+        frame = print_core_address (get_current_arch (), frm);
+    }
+
+  Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+                            Tcl_NewStringObj (core_addr_to_string
+                                                       (bp->loc->address), -1));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewStringObj (bptypes[bp->type], -1));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewBooleanObj (bp->enable_state == bp_enabled));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewIntObj (bp->ignore_count));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    get_breakpoint_commands (breakpoint_commands (bp)));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewStringObj (bp->cond_string, -1));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewIntObj (bp->thread));
+  Tcl_ListObjAppendElement (interp, result_ptr->obj_ptr, Tcl_NewIntObj (mask));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewIntObj (bp->hit_count));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+			    Tcl_NewStringObj (wp->exp_string, -1));
+  Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
+                            Tcl_NewStringObj (frame.c_str (), -1));
+
+  return TCL_OK;
+}
+
+/* This implements the tcl command gdb_get_watchpoint_list
+ * It builds up a list of the current watchpoints.
+ *
+ * Tcl Arguments:
+ *    None.
+ * Tcl Result:
+ *    A list of watchpoint numbers.
+ */
+static int
+gdb_get_watchpoint_list (ClientData clientData, Tcl_Interp *interp,
+			 int objc, Tcl_Obj *CONST objv[])
+{
+  (void) clientData;
+  return get_point_list (is_watchpoint, interp, objc, objv);
+}
+
+static int
+have_masked_watchpoints (void)
+{
+  return target_masked_watch_num_registers (0, ~0) != -1;
+}
+
+/* This implements the tcl command gdb_have_masked_watchpoints
+ *
+ * Tcl Arguments:
+ *    None.
+ * Tcl Result:
+ *    A Boolean value telling whether the target hardware supports masked
+ *    breakpoints or not.
+ */
+static int
+gdb_have_masked_watchpoints (ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[])
+{
+  (void) clientData;
+
+  Tcl_SetBooleanObj (result_ptr->obj_ptr, have_masked_watchpoints ());
   return TCL_OK;
 }

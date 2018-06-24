@@ -1,5 +1,5 @@
 # GDBEvent class definitions for Insight.
-# Copyright (C) 2001 Red Hat, Inc.
+# Copyright (C) 2001-2018 Red Hat, Inc.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License (GPL) as published by
@@ -125,6 +125,59 @@ itcl::class TracepointEvent {
   private variable _hit_count  {}
   private variable _actions    {}
   private variable _condition  {}
+
+  private method _init {}
+}
+
+# WATCHPOINT EVENT
+#
+# This event is created/dispatched whenever a watchpoint is created,
+# deleted, or modified.
+#
+# action ....... what type of BP event ("create", "delete", "modify")
+# number ....... gdb's internal token for the WP
+# address ...... location address of WP
+# type ......... watchpoint type ("watchpoint", "hw watchpoint", etc)
+# enabled ...... WP enabled?
+# ignore_count . WP's ignore count
+# commands ..... list of commands to run when WP hit
+# condition .... WP condition
+# thread ....... thread in which WP is set (or -1 for all threads)
+# mask ......... change mask of WP
+# hit_count .... number of times WP has been hit
+# user_specification
+#             .. text the user initially used to set this watchpoint
+# frame ........ frame base address for user_specification evaluation.
+itcl::class WatchpointEvent {
+  inherit GDBEvent
+
+  public variable action {}
+  public variable number {}
+
+  #constructor {args} {}
+  constructor {args} {
+    eval configure $args
+
+    # If creating/modifying a breakpoint, then get
+    # all info about it and save it away.
+    _init
+  }
+  #destructor { dbug I "" }
+
+  public method get {what}
+  public method handler {} { return "watchpoint" }
+
+  private variable _address      {}
+  private variable _type         {}
+  private variable _enabled      {}
+  private variable _ignore_count {}
+  private variable _commands     {}
+  private variable _condition    {}
+  private variable _thread       {}
+  private variable _mask         {}
+  private variable _hit_count    {}
+  private variable _user_specification {}
+  private variable _frame        {}
 
   private method _init {}
 }

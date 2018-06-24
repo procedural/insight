@@ -1,0 +1,281 @@
+# Watchpoint window class methods for Insight
+# Copyright (C) 2018 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License (GPL) as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  global_menu - add entries to global menu
+# ------------------------------------------------------------------
+itcl::body WpWin::global_menu {m} {
+  $m add check -label " Show Threads" -underline 1                      \
+    -variable [pref varname gdb/wp/show_threads] -command "$this toggle_threads"
+  $m add separator
+  chain $m
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  local_menu - add entries to local menu
+# ------------------------------------------------------------------
+itcl::body WpWin::local_menu {m} {
+  $m add radio -label "Change" -value "watchpoint" -underline 0 -state disabled
+  $m add radio -label "Access" -value "acc watchpoint" -underline 0     \
+    -state disabled
+  $m add radio -label "Read" -value "read watchpoint" -underline 0      \
+    -state disabled
+  $m add separator
+  chain $m
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  update_local_menu - update local menu entries
+# ------------------------------------------------------------------
+itcl::body WpWin::update_local_menu {m n args} {
+  set type [namespace which -variable watch_type]
+  $m entryconfigure "Change" -variable ${type}($n)                      \
+    -command "$this set_type $n" {*}$args
+  $m entryconfigure "Access" -variable ${type}($n)                      \
+    -command "$this set_type $n" {*}$args
+  $m entryconfigure "Read" -variable ${type}($n)                        \
+    -command "$this set_type $n" {*}$args
+  chain $m $n {*}$args
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  header - return column headers list
+# ------------------------------------------------------------------
+itcl::body WpWin::header {} {
+  grid columnconfigure $twin 3 -weight 1
+  return [list                                                          \
+            [list num "Num"]                                            \
+            [list thread "Thread"]                                      \
+            [list expr "Expression"]                                    \
+            [list mask "Mask"]                                          \
+            [list cond "Condition"]                                     \
+            [list ignore "Ignore"]                                      \
+            [list hits "Hits"]]
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  change - update a watchpoint entry
+# ------------------------------------------------------------------
+itcl::body WpWin::change {event n {color yellow}} {
+  set number [$event get number]
+  set user_spec [$event get user_specification]
+  set thread [$event get thread]
+  set cond [$event get condition]
+  set mask [$event get mask]
+  set ignore [$event get ignore_count]
+  set watch_type($n) [$event get type]
+
+  switch $watch_type($n) {
+    "acc watchpoint" { set color [pref get gdb/wp/wp_acc_fg] }
+    "read watchpoint" { set color [pref get gdb/wp/wp_w_fg] }
+    default {
+      set watch_type($n) watchpoint
+      set color [pref get gdb/wp/wp_fg]
+    }
+  }
+
+  if {$thread != "-1"} {
+    set color [pref get gdb/src/thread_fg]
+  } else {
+    set thread "ALL"
+  }
+
+  set exprballoon ""
+  if {[string length $user_spec] > 20} {
+    set exprballoon $user_spec
+    set user_spec [string range $user_spec 0 19]...
+  }
+
+  set balloon ""
+  if {[string length $cond] > 20} {
+    set balloon $cond
+    set cond [string range $cond 0 19]...
+  }
+
+  if {$mask == -1} {
+    set mask ""
+  } else {
+    set mask [format %X $mask]
+  }
+
+  if {$ignore == 0} {
+    set ignore ""
+  }
+
+  chain $event $n $color
+  $twin.num$n configure -text "$number "
+  $twin.thread$n configure -text "$thread "
+  $twin.expr$n configure -text "$user_spec "
+  balloon register $twin.expr$n $exprballoon
+  $twin.mask$n configure -text "$mask "
+  $twin.cond$n configure -text "$cond "
+  balloon register $twin.cond$n $balloon
+  $twin.ignore$n configure -text "$ignore "
+  $twin.hits$n configure -text "[$event get hit_count] "
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  add - add a watchpoint entry
+# ------------------------------------------------------------------
+itcl::body WpWin::add {event} {
+  set n $next_row
+  label $twin.num$n -relief flat -anchor w -font global/fixed
+  label $twin.thread$n -relief flat -anchor w -font global/fixed
+  label $twin.expr$n -relief flat -anchor w -font global/fixed -bg $bg1
+  label $twin.mask$n -relief flat -anchor w -font global/fixed
+  label $twin.cond$n -relief flat -anchor w -font global/fixed
+  label $twin.ignore$n -relief flat -anchor w -font global/fixed
+  label $twin.hits$n -relief flat -anchor w -font global/fixed
+  set watch_entry($n) ""
+  chain $event
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  store - stores away the watchpoints in a file of
+#                      gdb commands
+# ------------------------------------------------------------------
+itcl::body WpWin::store {} {
+  set out_file [tk_getSaveFile]
+  if {$out_file == ""} {
+    return
+  }
+  if {[catch {::open $out_file w} outH]} {
+    tk_messageBox -message "Could not open $out_file: $outH"
+    return
+  }
+
+  foreach watchpoint [gdb_get_watchpoint_list] {
+    # This is an lassign
+    foreach {address type enable_p ignore cmds cond thread mask         \
+             hit_count user_spec frame}                                 \
+      [gdb_get_watchpoint_info $watchpoint] {
+        break
+      }
+
+    switch $type {
+      "acc watchpoint" { set cmd [list awatch $user_spec] }
+      "read watchpoint" { set cmd [list rwatch $user_spec] }
+      default { set cmd [list watch $user_spec] }
+    }
+
+    if {$thread != -1} {
+      lappend cmd -thread $thread
+    }
+
+    if {$mask != -1} {
+      lappend cmd mask "0x[format %X $mask]"
+    }
+
+    puts $outH [join $cmd]
+
+    store_detail $outH "\$wpnum" "" commands $cmds $cond $enable_p $ignore
+  }
+
+  close $outH
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  watchpoint - Update widget when a watchpoint
+#                   event is received from the backend.
+# ------------------------------------------------------------------
+itcl::body WpWin::watchpoint {event} {
+  set action [$event get action]
+  #debug "wp update $action [$event get number] [$event get type]"
+
+  switch $action {
+    modify  { modify $event }
+    create  { add $event }
+    delete  { delete_point $event }
+    default { dbug E "Unknown watchpoint action: $action" }
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  toggle_threads - Hide/show thread column.
+# ------------------------------------------------------------------
+itcl::body WpWin::toggle_threads {} {
+  set show_threads [pref get gdb/wp/show_threads]
+  if {$show_threads} {
+    show_column thread
+  } else {
+    hide_column thread
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  set_type - Set watchpoint type.
+# ------------------------------------------------------------------
+itcl::body WpWin::set_type {n} {
+  set num $index_to_num($n)
+  #debug "set_type $n $num"
+  set info [gdb_get_watchpoint_info $num]
+  lassign $info addr type enable ignore cmds cond thread mask hit       \
+                user_spec frame
+  select $n
+  switch $watch_type($n) {
+    "acc watchpoint" {
+      gdb_cmd "delete $num"
+      gdb_cmd "awatch $user_spec"
+    }
+    "read watchpoint" {
+      gdb_cmd "delete $num"
+      gdb_cmd "rwatch $user_spec"
+    }
+    default {
+      gdb_cmd "delete $num"
+      gdb_cmd "watch $user_spec"
+    }
+  }
+}
+
+# ------------------------------------------------------------------
+#  PUBLIC METHOD:  goto - show watchpoint value in watch window
+# ------------------------------------------------------------------
+itcl::body WpWin::goto {r} {
+  set watchwin [ManagedWin::open WatchWin]
+  if {![$watchwin watched $watch_entry($r)]} {
+    set watch_entry($r) ""
+  }
+  if {$watch_entry($r) == ""} {
+    set num $index_to_num($r)
+    set info [gdb_get_watchpoint_info $num]
+    set user_spec [lindex $info 9]
+    set frame [lindex $info 10]
+    set watch_entry($r) [$watchwin add $user_spec $frame]
+  }
+
+  if {$watch_entry($r) != ""} {
+    $watchwin select $watch_entry($r)
+  }
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  delete_point - delete a watchpoint
+# ------------------------------------------------------------------
+itcl::body WpWin::delete_point {event} {
+  set n [chain $event]
+  if {$watch_entry($n) != ""} {
+    foreach watchwin [ManagedWin::find WatchWin] {
+      $watchwin remove $watch_entry($n)
+    }
+    set watch_entry($n) ""
+  }
+}
+
+# ------------------------------------------------------------------
+#  PRIVATE METHOD:  get_point_list - return current watchpoint list
+# ------------------------------------------------------------------
+itcl::body WpWin::get_point_list {} {
+  return [gdb_get_watchpoint_list]
+}
