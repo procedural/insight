@@ -1,0 +1,19 @@
+diff -Naurp gdb.orig/breakpoint.c gdb.new/breakpoint.c
+--- binutils-gdb.orig/gdb/breakpoint.c	2018-06-22 10:56:09.376862633 +0200
++++ binutils-gdb.new/gdb/breakpoint.c	2018-06-25 13:41:57.780248624 +0200
+@@ -5449,7 +5449,6 @@ bpstat_stop_status (const address_space
+ 	  if (bs->stop)
+ 	    {
+ 	      ++(b->hit_count);
+-	      gdb::observers::breakpoint_modified.notify (b);
+ 
+ 	      /* We will stop here.  */
+ 	      if (b->disposition == disp_disable)
+@@ -5459,6 +5458,7 @@ bpstat_stop_status (const address_space
+ 		    b->enable_state = bp_disabled;
+ 		  removed_any = 1;
+ 		}
++	      gdb::observers::breakpoint_modified.notify (b);
+ 	      if (b->silent)
+ 		bs->print = 0;
+ 	      bs->commands = b->commands;
