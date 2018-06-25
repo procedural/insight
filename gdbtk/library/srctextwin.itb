@@ -1608,8 +1608,13 @@ itcl::body SrcTextWin::do_bp { win action linenum type bpnum enabled thread asm}
     }
   }
 
+  set remove_type ""
   switch $type {
     donttouch {
+      set tag_type bp_tag
+      set remove_type disabled_bp_tag
+    }
+    disable {
       set tag_type bp_tag
       set remove_type disabled_bp_tag
     }
