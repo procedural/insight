@@ -192,7 +192,7 @@ itcl::body BpWin::forall {command} {
 #  PUBLIC METHOD: enable_disable - enable/disable a breakpoint
 # ------------------------------------------------------------------
 itcl::body BpWin::enable_disable {n} {
-  chain $n "" $temp($n)
+  chain $n $temp($n)
 }
 
 # ------------------------------------------------------------------

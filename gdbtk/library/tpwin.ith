@@ -21,12 +21,9 @@ itcl::class TpWin {
 
 
   public {
-    method enable_disable {n}
     method store {}
-    method forall {command}
     method get_actions {r}
     method goto {r}
-    method remove {n}
 
     # GDB Events
     method tracepoint {event}

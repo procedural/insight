@@ -124,27 +124,6 @@ itcl::body TpWin::store {} {
 }
 
 # ------------------------------------------------------------------
-#  PUBLIC METHOD:  forall - perform a command on all tracepoints
-# ------------------------------------------------------------------
-itcl::body TpWin::forall {command} {
-  chain $command tracepoint
-}
-
-# ------------------------------------------------------------------
-#  PUBLIC METHOD: enable_disable - enable/disable a tracepoint
-# ------------------------------------------------------------------
-itcl::body TpWin::enable_disable {n} {
-  chain $n tracepoint
-}
-
-# ------------------------------------------------------------------
-#  PUBLIC METHOD:  remove - remove a tracepoint
-# ------------------------------------------------------------------
-itcl::body TpWin::remove {n} {
-  chain $n tracepoint
-}
-
-# ------------------------------------------------------------------
 #  PUBLIC METHOD:  tracepoint - Update widget when a tracepoint
 #                   event is received from the backend.
 # ------------------------------------------------------------------

@@ -118,13 +118,13 @@ itcl::body PointWin::select {r} {
 # ------------------------------------------------------------------
 #  PUBLIC METHOD: enable_disable - enable/disable a point
 # ------------------------------------------------------------------
-itcl::body PointWin::enable_disable {i {type ""} {arg ""}} {
+itcl::body PointWin::enable_disable {i {arg ""}} {
   select $i
 
   if {$enabled($i) == "1"} {
-    set command "enable $type $arg"
+    set command "enable $arg"
   } else {
-    set command "disable $type"
+    set command "disable"
   }
 
   append command  " $index_to_num($i)"
@@ -134,9 +134,9 @@ itcl::body PointWin::enable_disable {i {type ""} {arg ""}} {
 # ------------------------------------------------------------------
 #  PUBLIC METHOD:  remove - remove a point
 # ------------------------------------------------------------------
-itcl::body PointWin::remove {n {type ""}} {
+itcl::body PointWin::remove {n} {
   select $n
-  gdb_cmd "delete $type $index_to_num($n)"
+  gdb_cmd "delete $index_to_num($n)"
 }
 
 # ------------------------------------------------------------------
@@ -180,18 +180,9 @@ itcl::body PointWin::watchpoint {event} {}
 # ------------------------------------------------------------------
 #  PUBLIC METHOD:  forall - perform a command on all points
 # ------------------------------------------------------------------
-itcl::body PointWin::forall {command {arg ""}} {
+itcl::body PointWin::forall {command} {
   foreach num [get_point_list] {
-    if {$command == "enable"} {
-      for {set i 1} {$i < $next_row} {incr i} {
-        if {$num == $index_to_num($i)} {
-          gdb_cmd "enable $arg $num"
-          break
-        }
-      }
-    } else {
-      gdb_cmd "$command $arg $num"
-    }
+    gdb_cmd "$command $num"
   }
 }
 

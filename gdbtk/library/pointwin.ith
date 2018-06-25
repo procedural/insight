@@ -81,11 +81,11 @@ itcl::class PointWin {
     variable MenuBar 1                  ;# Whether to display the menu bar.
 
     method constructor {args}
-    method remove {n {type ""}}
-    method enable_disable {n {type ""} {arg ""}}
+    method remove {n}
+    method enable_disable {n {arg ""}}
     method restore {}
     method store {}
-    method forall {command {arg ""}}
+    method forall {command}
     method show_column {col}
     method hide_column {col}
     method select {r}
