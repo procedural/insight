@@ -39,6 +39,7 @@
 #include "disasm.h"
 #include "value.h"
 #include "varobj.h"
+#include "gdbthread.h"
 #include "exceptions.h"
 #include "language.h"
 #include "target.h"
@@ -2154,7 +2155,8 @@ compare_lines (const PTR mle1p, const PTR mle2p)
 *    ?symbol? The symbol or address to locate - defaults to pc
 * Tcl Return:
 *    a list consisting of the following:
-*       basename, function name, filename, line number, address, current pc
+*       basename, function name, filename, line number, address, current pc,
+*       stop pc, solib
 */
 
 static int
@@ -2164,6 +2166,7 @@ gdb_loc (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST obj
   struct symtab_and_line sal;
   const char *fname;
   CORE_ADDR pc;
+  CORE_ADDR stop_pc = ~(CORE_ADDR) 0;
 
   if (objc == 1)
     {
@@ -2225,6 +2228,9 @@ gdb_loc (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST obj
       Tcl_WrongNumArgs (interp, 1, objv, "?symbol?");
       return TCL_ERROR;
     }
+
+  if (target_has_execution && !ptid_equal (inferior_ptid, null_ptid))
+    stop_pc = inferior_thread ()->suspend.stop_pc;
 
   if (sal.symtab)
     Tcl_ListObjAppendElement (NULL, result_ptr->obj_ptr,
