@@ -1503,13 +1503,6 @@ itcl::body SrcTextWin::tracepoint {tp_event} {
 }
 
 # ------------------------------------------------------------------
-#  PUBLIC METHOD:  watchpoint - Handle a watchpoint create, delete,
-#                   modify event from the backend.
-# ------------------------------------------------------------------
-itcl::body SrcTextWin::watchpoint {event} {}
-
-
-# ------------------------------------------------------------------
 #  METHOD:  bp - set and remove breakpoints
 #
 #  if $addr is valid, the breakpoint will be set in the assembly or

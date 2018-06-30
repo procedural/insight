@@ -69,9 +69,6 @@
 # - goto {r}                    Make point at row $r visible in some target
 #                               window.
 # - forall {command}            Execute $command for all points.
-# - breakpoint {event}          Capture breakpoint events.
-# - tracepoint {event}          Capture tracepoint events.
-# - watchpoint {event}          Capture watchpoint events.
 
 itcl::class PointWin {
   inherit EmbeddedWin GDBWin
@@ -91,11 +88,6 @@ itcl::class PointWin {
     method select {r}
     method goto {r}
     method _select_and_popup {point X Y}
-
-    # GDB Events
-    method breakpoint {event}
-    method tracepoint {event}
-    method watchpoint {event}
   }
 
   private {

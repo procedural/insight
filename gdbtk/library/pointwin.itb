@@ -158,26 +158,6 @@ itcl::body PointWin::delete_point {event} {
 }
 
 # ------------------------------------------------------------------
-#  PUBLIC METHOD:  breakpoint - Update widget when a breakpoint
-#                   event is received from the backend.
-# ------------------------------------------------------------------
-itcl::body PointWin::breakpoint {event} {}
-
-
-# ------------------------------------------------------------------
-#  PUBLIC METHOD:  tracepoint - Update widget when a tracepoint
-#                   event is received from the backend.
-# ------------------------------------------------------------------
-
-
-# ------------------------------------------------------------------
-#  PUBLIC METHOD:  watchpoint - Update widget when a watchpoint
-#                   event is received from the backend.
-# ------------------------------------------------------------------
-itcl::body PointWin::watchpoint {event} {}
-
-
-# ------------------------------------------------------------------
 #  PUBLIC METHOD:  forall - perform a command on all points
 # ------------------------------------------------------------------
 itcl::body PointWin::forall {command} {

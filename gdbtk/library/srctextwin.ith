@@ -94,7 +94,6 @@ itcl::class SrcTextWin {
     # GDB Events
     method breakpoint {event}
     method tracepoint {event}
-    method watchpoint {event}
     method set_variable {event}
   }
 
