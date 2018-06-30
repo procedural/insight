@@ -239,6 +239,6 @@ itcl::body UpdateEvent::get {what} {
     pc               { return $_pc }
     shlib            { return $_shlib }
 
-    default { error "unknown event data \"$what\": should be: variable|value" }
+    default { error "unknown event data \"$what\": should be: compile_filename|full_filename|function|line|frame_pc|pc|shlib" }
   }
 }
