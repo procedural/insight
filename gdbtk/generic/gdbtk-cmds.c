@@ -467,7 +467,7 @@ gdb_clear_file (ClientData clientData, Tcl_Interp *interp,
       return TCL_ERROR;
     }
 
-  if (! ptid_equal (inferior_ptid, null_ptid) && target_has_execution)
+  if (inferior_ptid != null_ptid && target_has_execution)
     {
       struct inferior *inf = current_inferior ();
       if (inf->attach_flag)
@@ -851,7 +851,7 @@ gdb_target_has_execution_command (ClientData clientData, Tcl_Interp *interp,
 {
   int result = 0;
 
-  if (target_has_execution && ! ptid_equal (inferior_ptid, null_ptid))
+  if (target_has_execution && inferior_ptid != null_ptid)
     result = 1;
 
   Tcl_SetBooleanObj (result_ptr->obj_ptr, result);
@@ -2229,7 +2229,7 @@ gdb_loc (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST obj
       return TCL_ERROR;
     }
 
-  if (target_has_execution && !ptid_equal (inferior_ptid, null_ptid))
+  if (target_has_execution && inferior_ptid != null_ptid)
     stop_pc = inferior_thread ()->suspend.stop_pc;
 
   if (sal.symtab)

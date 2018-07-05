@@ -882,7 +882,7 @@ gdb_trace_status (ClientData clientData,
 static int
 tracepoint_exists (const char *args)
 {
-  VEC(breakpoint_p) *tp_vec = NULL;
+  std::vector<breakpoint *> tp_vec;
   int ix;
   struct breakpoint *tp;
   std::vector<symtab_and_line> sals;
@@ -907,8 +907,9 @@ tracepoint_exists (const char *args)
         }
 
       tp_vec = all_tracepoints ();
-      for (ix = 0; VEC_iterate (breakpoint_p, tp_vec, ix, tp); ix++)
+      for (ix = 0; ix < tp_vec.size (); ix++)
 	{
+          tp = tp_vec[ix];
 	  if (tp->loc && tp->loc->address == sals[0].pc)
 	    result = tp->number;
 #if 0
@@ -918,7 +919,6 @@ tracepoint_exists (const char *args)
 	    result = tp->number;
 #endif
 	}
-      VEC_free (breakpoint_p, tp_vec);
     }
   return result;
 }

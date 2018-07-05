@@ -583,8 +583,7 @@ gdbtk_call_command (struct cmd_list_element *cmdblk,
       /* The above function may return before the target stops running even
          in synchronous mode. Make sure the target is not running by
          monitoring gdb events. */
-      while (!ptid_equal (inferior_ptid, null_ptid) &&
-             is_running (inferior_ptid))
+      while (inferior_ptid != null_ptid && is_running (inferior_ptid))
         gdb_do_one_event (-1);
 
       /* Emulate trace start/stop hook. */
@@ -794,7 +793,7 @@ gdbtk_annotate_signal (void)
      timeout. */
   Tcl_Eval (gdbtk_tcl_interp, "gdbtk_stop_idle_callback");
 
-  if (ptid_equal (inferior_ptid, null_ptid))
+  if (inferior_ptid == null_ptid)
     return;
 
   tp = inferior_thread ();
