@@ -1,6 +1,6 @@
 /* Main function for gdb with insight.
 
-   Copyright (C) 2002, 2014 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2018 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -24,10 +24,15 @@
 #include "main.h"
 #include <string.h>
 
+extern void initialize_gdbtk_interp (void);
+
 int
 main (int argc, char **argv)
 {
   struct captured_main_args args;
+
+  initialize_gdbtk_interp ();
+
   memset (&args, 0, sizeof args);
   args.argc = argc;
   args.argv = argv;

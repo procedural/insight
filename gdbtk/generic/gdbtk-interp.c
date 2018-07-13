@@ -1,7 +1,7 @@
 /* Insight Definitions for GDB, the GNU debugger.
    Written by Keith Seitz <kseitz@sources.redhat.com>
 
-   Copyright (C) 2003-2017 Free Software Foundation, Inc.
+   Copyright (C) 2003-2018 Free Software Foundation, Inc.
 
    This file is part of Insight.
 
@@ -195,7 +195,7 @@ gdbtk_interp_factory (const char *name)
 }
 
 void
-_initialize_gdbtk_interp (void)
+initialize_gdbtk_interp (void)
 {
   /* Does not run in target-async mode. */
   target_async_permitted = 0;
