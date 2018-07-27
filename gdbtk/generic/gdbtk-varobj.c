@@ -462,7 +462,6 @@ variable_children (Tcl_Interp *interp, struct varobj *var)
 static Tcl_Obj *
 variable_update (Tcl_Interp *interp, struct varobj **var)
 {
-  int i;
   Tcl_Obj *changed;
   std::vector<varobj_update_result> changes;
   std::vector<varobj_update_result>::iterator r;
@@ -589,7 +588,6 @@ variable_value (Tcl_Interp *interp, int objc,
 	{
 	  char *s;
 	  int ok = 0;
-	  struct gdb_exception e;
 
 	  s = Tcl_GetStringFromObj (objv[2], NULL);
 	  TRY
@@ -635,7 +633,6 @@ variable_print (Tcl_Interp *interp, int objc,
 {
   string_file stream;
   int ret = TCL_ERROR;
-  volatile struct gdb_exception except;
 
   TRY
     {

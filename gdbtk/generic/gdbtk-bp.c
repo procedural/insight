@@ -318,8 +318,6 @@ gdb_get_breakpoint_info (ClientData clientData, Tcl_Interp *interp, int objc,
   const char *addr_string;
   int isPending = 0;
 
-  Tcl_Obj *new_obj;
-
   if (objc != 2)
     {
       Tcl_WrongNumArgs (interp, 1, objv, "breakpoint");
@@ -536,7 +534,6 @@ gdb_set_bp (ClientData clientData, Tcl_Interp *interp,
   const char *address;
   char *typestr, *condition;
   event_location_up location;
-  struct gdb_exception e;
 
   /* Insight does not use all of these (yet?).  */
   ignore_count = 0;

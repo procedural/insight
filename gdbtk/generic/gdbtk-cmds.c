@@ -1202,10 +1202,9 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
 	       int objc, Tcl_Obj *CONST objv[])
 {
   struct objfile *objfile;
-  struct partial_symtab *psymtab;
   struct symtab *symtab;
   struct compunit_symtab *cu;
-  const char *lastfile, *pathname = NULL;
+  const char *lastfile;
   int i;
   struct listfiles_info info;
 

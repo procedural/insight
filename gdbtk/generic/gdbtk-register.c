@@ -399,12 +399,9 @@ get_register_types (int regnum, map_arg arg)
 static void
 get_register (int regnum, map_arg arg)
 {
-  CORE_ADDR addr;
-  enum lval_type lval;
   struct type *reg_vtype;
   int format;
   string_file stb;
-  long dummy;
   struct gdbarch *gdbarch;
   struct value *val;
   struct frame_info *frame;
@@ -568,8 +565,6 @@ register_changed_p (int regnum, map_arg arg)
 static void
 setup_architecture_data (void)
 {
-  int numregs;
-
   if (registers)
     delete registers;
 
@@ -630,7 +625,6 @@ gdb_reggrouplist (ClientData clientData, Tcl_Interp *interp,
 		  int objc, Tcl_Obj **objv)
 {
   struct reggroup *group;
-  int i = 0;
 
   if (objc != 0)
     {
