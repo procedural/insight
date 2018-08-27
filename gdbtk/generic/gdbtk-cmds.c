@@ -1224,7 +1224,11 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
         info.addfile (symtab->filename);
     }
 
-  std::sort (info.files.begin (), info.files.end (), strcmp);
+  std::sort (info.files.begin (), info.files.end (),
+             [] (const char * &a, const char * &b)
+               {
+                  return strcmp (a, b) < 0;
+               });
 
   lastfile = "";
 
