@@ -88,7 +88,7 @@ static void get_register_collectable (int regnum, map_arg);
 static int map_arg_registers (Tcl_Interp *, int, Tcl_Obj **,
 			      map_func, map_arg);
 static void register_changed_p (int, map_arg);
-static void setup_architecture_data (void);
+static int setup_architecture_data (void);
 static int gdb_regformat (ClientData, Tcl_Interp *, int, Tcl_Obj **);
 static int gdb_reggroup (ClientData, Tcl_Interp *, int, Tcl_Obj **);
 static int gdb_reggrouplist (ClientData, Tcl_Interp *, int, Tcl_Obj **);
@@ -562,13 +562,14 @@ register_changed_p (int regnum, map_arg arg)
                               result_ptr->obj_ptr, Tcl_NewIntObj (regnum));
 }
 
-static void
+static int
 setup_architecture_data (void)
 {
   if (registers)
     delete registers;
 
   registers = new gdbtk_reg_buffer (target_gdbarch ());
+  return TCL_OK;
 }
 
 /* gdb_regformat sets the format for a register */
