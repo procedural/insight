@@ -601,8 +601,8 @@ gdb_regformat (ClientData clientData, Tcl_Interp *interp,
 
   fm = (int)*(Tcl_GetStringFromObj (objv[2], NULL));
 
-  numregs = (gdbarch_num_regs (get_current_arch ())
-	     + gdbarch_num_pseudo_regs (get_current_arch ()));
+  numregs = (gdbarch_num_regs (target_gdbarch ())
+	     + gdbarch_num_pseudo_regs (target_gdbarch ()));
   gdb_assert (numregs == registers->num_registers ());
   if (regno >= numregs)
     {
