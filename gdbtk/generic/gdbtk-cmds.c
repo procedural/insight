@@ -1112,12 +1112,12 @@ gdb_find_file_command (ClientData clientData, Tcl_Interp *interp,
      to stat it. If it's not found, then ask gdb to find it for us. */
   if (IS_ABSOLUTE_PATH (filename))
     {
-      struct stat st;
-      const int status = stat (filename, &st);
+      struct stat sbuf;
+      const int status = stat (filename, &sbuf);
 
       if (status == 0)
 	{
-	  if (S_ISREG (st.st_mode))
+	  if (S_ISREG (sbuf.st_mode))
 	    fullname = filename;
 	}
     }

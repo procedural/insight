@@ -138,7 +138,7 @@ int running_now;
 
 /* This variable holds the name of a Tcl file which should be sourced by the
    interpreter when it goes idle at startup. Used with the testsuite. */
-static char *gdbtk_source_filename = NULL;
+static std::string gdbtk_source_filename;
 
 bool gdbtk_disable_write = true;
 
@@ -1009,13 +1009,11 @@ gdbtk_find_main";
   /* Now source in the filename provided by the --tclcommand option.
      This is mostly used for the gdbtk testsuite... */
 
-  if (gdbtk_source_filename != NULL)
+  if (gdbtk_source_filename.length ())
     {
-      const char *s = "after idle source ";
-      char *script = concat (s, gdbtk_source_filename, (char *) NULL);
-      Tcl_Eval (gdbtk_tcl_interp, script);
-      free (gdbtk_source_filename);
-      free (script);
+      Tcl_Eval (gdbtk_tcl_interp,
+                ("after idle source " + gdbtk_source_filename).c_str ());
+      gdbtk_source_filename.clear ();
     }
 }
 
@@ -1028,8 +1026,7 @@ gdbtk_test (char *filename)
 {
   if (access (filename, R_OK) != 0)
     return 0;
-  else
-    gdbtk_source_filename = xstrdup (filename);
+  gdbtk_source_filename = filename;
   return 1;
 }
 

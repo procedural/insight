@@ -476,9 +476,8 @@ variable_update (Tcl_Interp *interp, struct varobj **var)
 	{
 	case VAROBJ_IN_SCOPE:
 	  {
-	    Tcl_Obj *var
-	      =  Tcl_NewStringObj (varobj_get_objname (r->varobj), -1);
-	    Tcl_ListObjAppendElement (NULL, changed, var);
+	    Tcl_Obj *v = Tcl_NewStringObj (varobj_get_objname (r->varobj), -1);
+	    Tcl_ListObjAppendElement (NULL, changed, v);
 	  }
 	  break;
 
