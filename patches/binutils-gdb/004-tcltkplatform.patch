@@ -4,7 +4,7 @@
 diff -Naurp a/gdb/acinclude.m4 b/gdb/acinclude.m4
 --- a/gdb/acinclude.m4	2016-10-31 16:30:59.890619965 +0100
 +++ b/gdb/acinclude.m4	2016-11-25 14:35:02.114813699 +0100
-@@ -249,44 +249,76 @@ fi
+@@ -252,44 +252,76 @@ fi
  ])
  
  dnl Find the location of the private Tcl headers
@@ -178,7 +178,7 @@ diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 diff -Naurp a/gdb/Makefile.in b/gdb/Makefile.in
 --- a/gdb/Makefile.in	2016-11-25 14:24:44.190083746 +0100
 +++ b/gdb/Makefile.in	2016-11-25 14:36:23.590282737 +0100
-@@ -511,7 +511,7 @@ SUBDIR_GDBTK_SRCS = \
+@@ -510,7 +510,7 @@ SUBDIR_GDBTK_SRCS = \
  
  SUBDIR_GDBTK_DEPS = $(LIBGUI) $(TCL_DEPS) $(TK_DEPS)
  SUBDIR_GDBTK_LDFLAGS =
