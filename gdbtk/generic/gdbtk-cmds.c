@@ -1407,7 +1407,7 @@ gdb_search (ClientData clientData, Tcl_Interp *interp,
       switch_objv++;
     }
 
-  ss = search_symbols (regexp, space, files.size (), files.data ());
+  ss = search_symbols (regexp, space, NULL, files.size (), files.data ());
 
   Tcl_SetListObj (result_ptr->obj_ptr, 0, NULL);
 
