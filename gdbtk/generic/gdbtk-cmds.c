@@ -1867,7 +1867,7 @@ gdbtk_load_source (ClientData clientData, struct symtab *symtab,
       /* The file is not yet open, try to open it, then print the
 	 first line.  If we fail, set FILE_OPEN_P to -1. */
 
-      fdes = open_source_file (symtab);
+      fdes = open_source_file (symtab).release ();
       if (fdes < 0)
 	{
 	  client_data->file_opened_p = -1;
@@ -3050,16 +3050,12 @@ gdb_CA_to_TAS (ClientData clientData, Tcl_Interp *interp,
 const char *
 symtab_to_filename (struct symtab *s)
 {
-  int r;
-
   if (!s)
     return NULL;
 
   /* Don't check s->fullname here, the file could have been
      deleted/moved/..., look for it again */
-  r = open_source_file (s);
-  if (r)
-    close (r);
+  open_source_file (s);
 
   if (s->fullname && *s->fullname)
       return s->fullname;
