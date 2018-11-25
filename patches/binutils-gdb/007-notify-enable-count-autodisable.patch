@@ -1,7 +1,7 @@
 diff -Naurp gdb.orig/breakpoint.c gdb.new/breakpoint.c
 --- binutils-gdb.orig/gdb/breakpoint.c	2018-06-22 10:56:09.376862633 +0200
 +++ binutils-gdb.new/gdb/breakpoint.c	2018-06-25 13:41:57.780248624 +0200
-@@ -5441,7 +5441,6 @@ bpstat_stop_status (const address_space
+@@ -5439,7 +5439,6 @@ bpstat_stop_status (const address_space
  	  if (bs->stop)
  	    {
  	      ++(b->hit_count);
@@ -9,7 +9,7 @@ diff -Naurp gdb.orig/breakpoint.c gdb.new/breakpoint.c
  
  	      /* We will stop here.  */
  	      if (b->disposition == disp_disable)
-@@ -5451,6 +5450,7 @@ bpstat_stop_status (const address_space
+@@ -5449,6 +5448,7 @@ bpstat_stop_status (const address_space
  		    b->enable_state = bp_disabled;
  		  removed_any = 1;
  		}
