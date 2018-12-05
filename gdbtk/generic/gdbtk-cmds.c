@@ -2282,7 +2282,7 @@ gdb_entry_point (ClientData clientData, Tcl_Interp *interp,
 
   /* If we have not yet loaded an exec file, then we have no
      entry point, so return an empty string.*/
-  if ((int) current_top_target ()->to_stratum > (int) dummy_stratum)
+  if ((int) current_top_target ()->stratum () > (int) dummy_stratum)
     {
       addrstr = (char *)core_addr_to_string (entry_point_address ());
       Tcl_SetStringObj (result_ptr->obj_ptr, addrstr, -1);
