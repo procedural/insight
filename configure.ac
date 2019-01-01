@@ -90,7 +90,7 @@ done
 
 dnl Since the binutils-gdb configure files have to be regenerated, we define
 dnl the autoconf version to use here.
-sed -i -e '[/m4\_define(\[_GCC_AUTOCONF_VERSION\],/s/, \[[a-zA-Z0-9._-]*\]/, m4\_PACKAGE_VERSION)/]' bundle/config/override.m4
+sed -i -e '[/m4\_define(\[_GCC_AUTOCONF_VERSION\],/s/, \[[a-zA-Z0-9._-]*\]/, m4\_PACKAGE_VERSION/]' bundle/config/override.m4
 
 dnl Now regenerate the configure files
 (
