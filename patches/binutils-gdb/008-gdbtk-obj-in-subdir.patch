@@ -1,0 +1,76 @@
+* Tue Jan  1 2019 Patrick Monnerat <patrick@monnerat.net>
+- Keep gdbtk object files in their source directory.
+
+diff --git a/gdb/Makefile.in b/gdb/Makefile.in
+index 215ef7933c..d89249091a 100644
+--- a/gdb/Makefile.in
++++ b/gdb/Makefile.in
+@@ -494,15 +494,15 @@ GDBTK_LIBRARY = $(datadir)/insight$(GDBTK_VERSION)
+ GDBTK_SRC_DIR = @GDBTK_SRC_DIR@
+ 
+ SUBDIR_GDBTK_OBS = \
+-	gdbtk.o \
+-	gdbtk-bp.o \
+-	gdbtk-cmds.o \
+-	gdbtk-hooks.o \
+-	gdbtk-interp.o \
+-	gdbtk-register.o \
+-	gdbtk-stack.o \
+-	gdbtk-varobj.o \
+-	gdbtk-wrapper.o
++	gdbtk/generic/gdbtk.o \
++	gdbtk/generic/gdbtk-bp.o \
++	gdbtk/generic/gdbtk-cmds.o \
++	gdbtk/generic/gdbtk-hooks.o \
++	gdbtk/generic/gdbtk-interp.o \
++	gdbtk/generic/gdbtk-register.o \
++	gdbtk/generic/gdbtk-stack.o \
++	gdbtk/generic/gdbtk-varobj.o \
++	gdbtk/generic/gdbtk-wrapper.o
+ 
+ SUBDIR_GDBTK_SRCS = \
+ 	gdbtk/generic/gdbtk.c \
+@@ -532,7 +532,7 @@ CONFIG_UNINSTALL = @CONFIG_UNINSTALL@
+ HAVE_NATIVE_GCORE_TARGET = @HAVE_NATIVE_GCORE_TARGET@
+ 
+ CONFIG_SRC_SUBDIR = arch cli mi common compile tui unittests guile python \
+-	target nat
++	target nat gdbtk/generic
+ CONFIG_DEP_SUBDIR = $(addsuffix /$(DEPDIR),$(CONFIG_SRC_SUBDIR))
+ 
+ # -I. for config files.
+@@ -1644,10 +1644,8 @@ $(CONFIG_DEP_SUBDIR):
+ # Python files need special flags.
+ python/%.o: INTERNAL_CFLAGS += $(PYTHON_CFLAGS)
+ 
+-# Rules for compiling .c files in the various source subdirectories.
+-%.o: $(srcdir)/gdbtk/generic/%.c
+-	$(COMPILE) $(all_gdbtk_cflags) $<
+-	$(POSTCOMPILE)
++# Insight UI needs special flags.
++gdbtk/generic/%.o: INTERNAL_CFLAGS += $(all_gdbtk_cflags)
+ 
+ installcheck:
+ 
+@@ -2558,10 +2556,10 @@ clean-gdbtk:
+ 	rm -f insight$(EXEEXT)
+ 
+ # Removing the old gdb first works better if it is running, at least on SunOS.
+-insight$(EXEEXT): gdbtk-main.o libgdb.a $(CDEPS) $(TDEPLIBS)
++insight$(EXEEXT): gdbtk/generic/gdbtk-main.o libgdb.a $(CDEPS) $(TDEPLIBS)
+ 	rm -f insight$(EXEEXT)
+ 	$(ECHO_CXXLD) $(CC_LD) $(INTERNAL_LDFLAGS) $(WIN32LDAPP) \
+-		-o insight$(EXEEXT) gdbtk-main.o libgdb.a \
++		-o insight$(EXEEXT) gdbtk/generic/gdbtk-main.o libgdb.a \
+ 		$(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES)
+ 
+ gdbres.o: $(srcdir)/gdbtk/gdb.rc $(srcdir)/gdbtk/gdbtool.ico
+@@ -2596,7 +2594,7 @@ endif
+ 
+ # A list of all the objects we might care about in this build, for
+ # dependency tracking.
+-all_object_files = gdb.o $(LIBGDB_OBS) gdbtk-main.o \
++all_object_files = gdb.o $(LIBGDB_OBS) gdbtk/generic/gdbtk-main.o \
+ 	test-cp-name-parser.o
+ 
+ # All the .deps files to include.
