@@ -1,5 +1,5 @@
 /* Tcl/Tk command definitions for Insight.
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2019 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
    Substantially augmented by Martin Hunt, Keith Seitz & Jim Ingham of
@@ -1201,9 +1201,6 @@ static int
 gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
 	       int objc, Tcl_Obj *CONST objv[])
 {
-  struct objfile *objfile;
-  struct symtab *symtab;
-  struct compunit_symtab *cu;
   const char *lastfile;
   int i;
   struct listfiles_info info;
@@ -1218,10 +1215,16 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
 
   map_symbol_filenames (do_listfiles, &info, 0);
 
-  ALL_FILETABS (objfile, cu, symtab)
+  for (objfile *objfile : all_objfiles (current_program_space))
     {
-      if (symtab->linetable && symtab->linetable->nitems)
-        info.addfile (symtab->filename);
+      for (compunit_symtab *cu : objfile_compunits (objfile))
+        {
+          for (symtab *symtab : compunit_filetabs (cu))
+            {
+              if (symtab->linetable && symtab->linetable->nitems)
+                info.addfile (symtab->filename);
+            }
+        }
     }
 
   std::sort (info.files.begin (), info.files.end (),
