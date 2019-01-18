@@ -1215,9 +1215,9 @@ gdb_listfiles (ClientData clientData, Tcl_Interp *interp,
 
   map_symbol_filenames (do_listfiles, &info, 0);
 
-  for (objfile *objfile : all_objfiles (current_program_space))
+  for (objfile *objfile : current_program_space->objfiles ())
     {
-      for (compunit_symtab *cu : objfile_compunits (objfile))
+      for (compunit_symtab *cu : objfile->compunits ())
         {
           for (symtab *symtab : compunit_filetabs (cu))
             {
