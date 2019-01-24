@@ -1,5 +1,5 @@
 /* Startup code for Insight
-   Copyright (C) 1994-2018 Free Software Foundation, Inc.
+   Copyright (C) 1994-2019 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
 
@@ -21,6 +21,8 @@
    Boston, MA 02110-1301, USA.  */
 
 #include "defs.h"
+#undef STRINGIFY		// Avoid conflict.
+
 #include "inferior.h"
 #include "symfile.h"
 #include "objfiles.h"

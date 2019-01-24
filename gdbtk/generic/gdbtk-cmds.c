@@ -23,6 +23,8 @@
    Boston, MA 02110-1301, USA.  */
 
 #include "defs.h"
+#undef STRINGIFY		// Avoid conflict.
+
 #include "inferior.h"
 #include "source.h"
 #include "symfile.h"
