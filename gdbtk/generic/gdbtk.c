@@ -29,7 +29,7 @@
 #include "gdbcore.h"
 #include "tracepoint.h"
 #include "demangle.h"
-#include "version.h"
+#include "common/version.h"
 #include "top.h"
 #include "annotate.h"
 #include "exceptions.h"
