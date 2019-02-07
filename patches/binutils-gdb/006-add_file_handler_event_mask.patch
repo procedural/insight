@@ -73,8 +73,8 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
 --- binutils-gdb.orig/gdb/event-loop.h	2018-03-30 19:08:27.752116923 +0200
 +++ binutils-gdb.new/gdb/event-loop.h	2018-03-30 19:16:18.058621399 +0200
 @@ -70,6 +70,12 @@
- #ifndef EVENT_LOOP_H
- #define EVENT_LOOP_H
+ 
+    Corollary tasks are the creation and deletion of event sources.  */
  
 +/* Tell add_file_handler what events we are interested in. */
 +

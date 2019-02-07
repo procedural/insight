@@ -76,17 +76,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
 diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
 --- binutils-gdb.orig/gdb/event-loop.h	2018-01-04 17:43:15.658599234 +0100
 +++ binutils-gdb.new/gdb/event-loop.h	2018-03-30 19:08:27.752116923 +0200
-@@ -67,6 +67,9 @@
- 
-    Corollary tasks are the creation and deletion of event sources.  */
- 
-+#ifndef EVENT_LOOP_H
-+#define EVENT_LOOP_H
-+
- typedef void *gdb_client_data;
- struct async_signal_handler;
- struct async_event_handler;
-@@ -78,7 +81,7 @@ typedef void (timer_handler_func) (gdb_c
+@@ -81,7 +81,7 @@ typedef void (timer_handler_func) (gdb_c
  /* Exported functions from event-loop.c */
  
  extern void start_event_loop (void);
@@ -95,9 +85,3 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.h binutils-gdb.new/gdb/event-loop.h
  extern void delete_file_handler (int fd);
  extern void add_file_handler (int fd, handler_func *proc, 
  			      gdb_client_data client_data);
-@@ -127,3 +130,5 @@ extern void mark_async_event_handler (st
- extern void clear_async_event_handler (struct async_event_handler *handler);
- 
- extern void initialize_async_signal_handlers (void);
-+
-+#endif
