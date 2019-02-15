@@ -5,7 +5,7 @@ diff --git a/gdb/Makefile.in b/gdb/Makefile.in
 index 215ef7933c..d89249091a 100644
 --- a/gdb/Makefile.in
 +++ b/gdb/Makefile.in
-@@ -494,15 +494,15 @@ GDBTK_LIBRARY = $(datadir)/insight$(GDBTK_VERSION)
+@@ -495,15 +495,15 @@ GDBTK_LIBRARY = $(datadir)/insight$(GDBTK_VERSION)
  GDBTK_SRC_DIR = @GDBTK_SRC_DIR@
  
  SUBDIR_GDBTK_OBS = \
@@ -30,7 +30,7 @@ index 215ef7933c..d89249091a 100644
  
  SUBDIR_GDBTK_SRCS = \
  	gdbtk/generic/gdbtk.c \
-@@ -532,7 +532,7 @@ CONFIG_UNINSTALL = @CONFIG_UNINSTALL@
+@@ -533,7 +533,7 @@ CONFIG_UNINSTALL = @CONFIG_UNINSTALL@
  HAVE_NATIVE_GCORE_TARGET = @HAVE_NATIVE_GCORE_TARGET@
  
  CONFIG_SRC_SUBDIR = arch cli mi common compile tui unittests guile python \
@@ -39,7 +39,7 @@ index 215ef7933c..d89249091a 100644
  CONFIG_DEP_SUBDIR = $(addsuffix /$(DEPDIR),$(CONFIG_SRC_SUBDIR))
  
  # -I. for config files.
-@@ -1643,10 +1643,8 @@ $(CONFIG_DEP_SUBDIR):
+@@ -1644,10 +1644,8 @@ $(CONFIG_DEP_SUBDIR):
  # Python files need special flags.
  python/%.o: INTERNAL_CFLAGS += $(PYTHON_CFLAGS)
  
@@ -52,7 +52,7 @@ index 215ef7933c..d89249091a 100644
  
  installcheck:
  
-@@ -2557,10 +2555,10 @@ clean-gdbtk:
+@@ -2558,10 +2556,10 @@ clean-gdbtk:
  	rm -f insight$(EXEEXT)
  
  # Removing the old gdb first works better if it is running, at least on SunOS.
@@ -65,7 +65,7 @@ index 215ef7933c..d89249091a 100644
  		$(TDEPLIBS) $(TUI_LIBRARY) $(CLIBS) $(LOADLIBES)
  
  gdbres.o: $(srcdir)/gdbtk/gdb.rc $(srcdir)/gdbtk/gdbtool.ico
-@@ -2595,7 +2593,7 @@ endif
+@@ -2596,7 +2594,7 @@ endif
  
  # A list of all the objects we might care about in this build, for
  # dependency tracking.
