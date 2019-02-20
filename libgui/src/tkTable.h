@@ -35,6 +35,7 @@ extern "C" {
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <ctype.h>
 #include <tk.h>
 
 #ifndef CONST86
