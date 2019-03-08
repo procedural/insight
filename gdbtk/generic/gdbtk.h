@@ -1,5 +1,5 @@
 /* Tcl/Tk interface routines header file.
-   Copyright (C) 1994-2017 Free Software Foundation, Inc.
+   Copyright (C) 1994-2019 Free Software Foundation, Inc.
 
    Written by Stu Grossman <grossman@cygnus.com> of Cygnus Support.
 
@@ -23,6 +23,8 @@
 
 #ifndef _GDBTK_H
 #define _GDBTK_H
+
+#include "gdbtk-interp.h"
 
 #ifdef _WIN32
 #define GDBTK_PATH_SEP ";"
@@ -80,11 +82,6 @@ extern long gdbtk_pid;
 
 extern int No_Update;
 extern int load_in_progress;
-
-/* This is the main gdbtk interpreter.  It is defined and initialized
-   in gdbtk.c */
-
-extern Tcl_Interp *gdbtk_tcl_interp;
 
 /*
  * This structure controls how the gdb output is fed into gdbtk_call_wrapper
@@ -191,9 +188,11 @@ extern void
 extern void gdbtk_add_hooks (void);
 
 /* Initialize Insight */
-extern void gdbtk_init (void);
+extern void gdbtk_init (gdbtk_interp *);
 
 /* Start Insight. Insight must have already been initialized with a call
    to gdbtk_init. */
-extern void gdbtk_source_start_file (void);
+extern void gdbtk_source_start_file (gdbtk_interp *);
+
+extern void gdbtk_uninstall_notifier (void);
 #endif /* !_GDBTK_H */

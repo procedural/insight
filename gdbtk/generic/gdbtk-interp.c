@@ -1,7 +1,7 @@
 /* Insight Definitions for GDB, the GNU debugger.
    Written by Keith Seitz <kseitz@sources.redhat.com>
 
-   Copyright (C) 2003-2018 Free Software Foundation, Inc.
+   Copyright (C) 2003-2019 Free Software Foundation, Inc.
 
    This file is part of Insight.
 
@@ -36,6 +36,7 @@
 #include "tcl.h"
 #include "tk.h"
 #include "gdbtk.h"
+#include "gdbtk-interp.h"
 
 #ifdef __MINGW32__
 # define WIN32_LEAN_AND_MEAN
@@ -44,31 +45,7 @@
 
 
 static void hack_disable_interpreter_exec (const char *, int);
-void _initialize_gdbtk_interp (void);
 
-/* The gdb interpreter. */
-
-class gdbtk_interp final : public interp
-{
-public:
-  gdbtk_interp (const char * name): interp (name)
-  {}
-
-  void init (bool top_level) override;
-  void resume () override;
-  void suspend () override;
-  gdb_exception exec (const char * command_str) override;
-  ui_out *interp_ui_out () override;
-  void set_logging (ui_file_up logfile, bool logging_redirect) override;
-  void pre_command_loop () override;
-
-  ui_file *_stdout;
-  ui_file *_stderr;
-  ui_file *_stdlog;
-  ui_file *_stdtarg;
-  ui_file *_stdtargin;
-  ui_out *uiout;
-};
 
 /* See note in gdbtk_interp::init */
 static void
@@ -82,6 +59,29 @@ gdbtk_do_const_cfunc (struct cmd_list_element *c,
                       const char *args, int from_tty)
 {
   c->function.const_cfunc (args, from_tty);
+}
+
+gdbtk_interp::gdbtk_interp (const char * name): interp (name)
+{
+  _stdout = NULL;
+  _stderr = NULL;
+  _stdlog = NULL;
+  _stdlog = NULL;
+  _stdtarg = NULL;
+  _stdtargin = NULL;
+  uiout = NULL;
+
+  tcl = NULL;
+}
+
+gdbtk_interp::~gdbtk_interp()
+{
+ if (tcl)
+   {
+     Tcl_DeleteInterp (tcl);
+     gdbtk_uninstall_notifier ();
+     tcl = NULL;
+   }
 }
 
 void
@@ -99,7 +99,7 @@ gdbtk_interp::init (bool top_level)
   _stdtargin = gdbtk_fileopen ();
   uiout = cli_out_new (_stdout),
 
-  gdbtk_init ();
+  gdbtk_init (this);
 
   if (lookup_cmd_composition ("interpreter-exec", &alias, &prefix, &cmd))
     {
@@ -131,7 +131,7 @@ gdbtk_interp::resume ()
   if (!started)
     {
       started = 1;
-      gdbtk_source_start_file ();
+      gdbtk_source_start_file (this);
     }
 }
 
@@ -156,14 +156,14 @@ gdbtk_interp::pre_command_loop ()
      events from stdin. */
   main_ui->input_fd = -1;
 
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_preloop") != TCL_OK)
+  if (Tcl_Eval (tcl, "gdbtk_tcl_preloop") != TCL_OK)
     {
       const char *msg;
 
       /* Force errorInfo to be set up propertly.  */
-      Tcl_AddErrorInfo (gdbtk_tcl_interp, "");
+      Tcl_AddErrorInfo (tcl, "");
 
-      msg = Tcl_GetVar (gdbtk_tcl_interp, "errorInfo", TCL_GLOBAL_ONLY);
+      msg = Tcl_GetVar (tcl, "errorInfo", TCL_GLOBAL_ONLY);
 #ifdef _WIN32
       MessageBox (NULL, msg, NULL, MB_OK | MB_ICONERROR | MB_TASKMODAL);
 #else
@@ -185,6 +185,15 @@ gdbtk_interp::interp_ui_out ()
 void
 gdbtk_interp::set_logging (ui_file_up logfile, bool logging_redirect)
 {
+}
+
+/* Get insight's current interpreter. */
+gdbtk_interp *
+gdbtk_get_interp (void)
+{
+  if (!current_interp_named_p(INTERP_INSIGHT))
+    throw_error (NOT_FOUND_ERROR, "current intepreter is not insight's");
+  return (gdbtk_interp *) current_interpreter ();
 }
 
 /* Factory for GUI interpreter. */

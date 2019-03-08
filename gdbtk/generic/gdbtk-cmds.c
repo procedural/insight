@@ -350,7 +350,7 @@ Gdbtk_Init (Tcl_Interp *interp)
     return TCL_ERROR;
 
   /* Determine where to disassemble from */
-  Tcl_LinkVar (gdbtk_tcl_interp, "disassemble-from-exec",
+  Tcl_LinkVar (interp, "disassemble-from-exec",
 	       (char *) &disassemble_from_exec,
 	       TCL_LINK_INT);
 
@@ -1916,8 +1916,8 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
   const char **text_argv;
   int i, pc_to_line_len, line_to_pc_len;
   gdbtk_result new_result;
+  gdbtk_result *old_result_ptr;
   int insn;
-  struct cleanup *old_chain = NULL;
 
   pc_to_line_len = Tcl_DStringLength (&client_data->pc_to_line_prefix);
   line_to_pc_len = Tcl_DStringLength (&client_data->line_to_pc_prefix);
@@ -1927,69 +1927,78 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
   /* Preserve the current Tcl result object, print out what we need, and then
      suck it out of the result, and replace... */
 
-  old_chain = make_cleanup (gdbtk_restore_result_ptr, (void *) result_ptr);
-  result_ptr = &new_result;
-  result_ptr->obj_ptr = client_data->result_obj[0];
-  result_ptr->flags = GDBTK_TO_RESULT;
-
-  /* Null out the three return objects we will use. */
-
-  for (i = 0; i < 3; i++)
-    Tcl_SetObjLength (client_data->result_obj[i], 0);
-
-  fputs_filtered (paddress (get_current_arch (), pc), gdb_stdout);
-  gdb_flush (gdb_stdout);
-
-  result_ptr->obj_ptr = client_data->result_obj[1];
-  print_address_symbolic (get_current_arch (), pc, gdb_stdout, 1, "\t");
-  gdb_flush (gdb_stdout);
-
-  result_ptr->obj_ptr = client_data->result_obj[2];
-  /* FIXME: cagney/2003-09-08: This should use gdb_disassembly.  */
-  insn = gdb_print_insn (get_current_arch (), pc, gdb_stdout, NULL);
-  gdb_flush (gdb_stdout);
-
-  client_data->widget_line_no++;
-
-  text_argv[5] = Tcl_GetStringFromObj (client_data->result_obj[0], NULL);
-  text_argv[7] = Tcl_GetStringFromObj (client_data->result_obj[1], NULL);
-  text_argv[11] = Tcl_GetStringFromObj (client_data->result_obj[2], NULL);
-
-  client_data->cmd.proc (client_data->cmd.clientData,
-			 client_data->interp, 14, text_argv);
-
-  if (*client_data->map_arr != '\0')
+  old_result_ptr = result_ptr;
+  TRY
     {
-      std::string buffer;
+      result_ptr = &new_result;
+      result_ptr->obj_ptr = client_data->result_obj[0];
+      result_ptr->flags = GDBTK_TO_RESULT;
 
-      /* Run the command, then add an entry to the map array in
-	 the caller's scope. */
+      /* Null out the three return objects we will use. */
 
-      Tcl_DStringAppend (&client_data->pc_to_line_prefix, core_addr_to_string (pc), -1);
+      for (i = 0; i < 3; i++)
+        Tcl_SetObjLength (client_data->result_obj[i], 0);
 
-      /* FIXME: Convert to Tcl_SetVar2Ex when we move to 8.2.  This
-	 will allow us avoid converting widget_line_no into a string. */
+      fputs_filtered (paddress (get_current_arch (), pc), gdb_stdout);
+      gdb_flush (gdb_stdout);
 
-      buffer = string_printf ("%d", client_data->widget_line_no);
+      result_ptr->obj_ptr = client_data->result_obj[1];
+      print_address_symbolic (get_current_arch (), pc, gdb_stdout, 1, "\t");
+      gdb_flush (gdb_stdout);
 
-      Tcl_SetVar2 (client_data->interp, client_data->map_arr,
-		   Tcl_DStringValue (&client_data->pc_to_line_prefix),
-		   buffer.c_str (), 0);
+      result_ptr->obj_ptr = client_data->result_obj[2];
+      /* FIXME: cagney/2003-09-08: This should use gdb_disassembly.  */
+      insn = gdb_print_insn (get_current_arch (), pc, gdb_stdout, NULL);
+      gdb_flush (gdb_stdout);
 
-      Tcl_DStringAppend (&client_data->line_to_pc_prefix, buffer.c_str (), -1);
+      client_data->widget_line_no++;
+
+      text_argv[5] = Tcl_GetStringFromObj (client_data->result_obj[0], NULL);
+      text_argv[7] = Tcl_GetStringFromObj (client_data->result_obj[1], NULL);
+      text_argv[11] = Tcl_GetStringFromObj (client_data->result_obj[2], NULL);
+
+      client_data->cmd.proc (client_data->cmd.clientData,
+			     client_data->interp, 14, text_argv);
+
+      if (*client_data->map_arr != '\0')
+        {
+          std::string buffer;
+
+          /* Run the command, then add an entry to the map array in
+	     the caller's scope. */
+
+          Tcl_DStringAppend (&client_data->pc_to_line_prefix, core_addr_to_string (pc), -1);
+
+          /* FIXME: Convert to Tcl_SetVar2Ex when we move to 8.2.  This
+	     will allow us avoid converting widget_line_no into a string. */
+
+          buffer = string_printf ("%d", client_data->widget_line_no);
+
+          Tcl_SetVar2 (client_data->interp, client_data->map_arr,
+		       Tcl_DStringValue (&client_data->pc_to_line_prefix),
+		       buffer.c_str (), 0);
+
+          Tcl_DStringAppend (&client_data->line_to_pc_prefix, buffer.c_str (), -1);
 
 
-      Tcl_SetVar2 (client_data->interp, client_data->map_arr,
-		   Tcl_DStringValue (&client_data->line_to_pc_prefix),
-		   core_addr_to_string (pc), 0);
+          Tcl_SetVar2 (client_data->interp, client_data->map_arr,
+		       Tcl_DStringValue (&client_data->line_to_pc_prefix),
+		       core_addr_to_string (pc), 0);
 
-      /* Restore the prefixes to their initial state. */
+          /* Restore the prefixes to their initial state. */
 
-      Tcl_DStringSetLength (&client_data->pc_to_line_prefix, pc_to_line_len);
-      Tcl_DStringSetLength (&client_data->line_to_pc_prefix, line_to_pc_len);
+          Tcl_DStringSetLength (&client_data->pc_to_line_prefix, pc_to_line_len);
+          Tcl_DStringSetLength (&client_data->line_to_pc_prefix, line_to_pc_len);
+        }
     }
+  CATCH (e, RETURN_MASK_ALL)
+    {
+      result_ptr = old_result_ptr;
+      exception_rethrow ();
+    }
+  END_CATCH
 
-  do_cleanups (old_chain);
+  result_ptr = old_result_ptr;
 
   return pc + insn;
 }

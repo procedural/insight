@@ -1,5 +1,5 @@
 /* Tcl/Tk command definitions for Insight - Breakpoints.
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2019 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -32,6 +32,7 @@
 #include <tcl.h>
 #include "gdbtk.h"
 #include "gdbtk-cmds.h"
+#include "gdbtk-interp.h"
 #include "arch-utils.h"
 #include "exceptions.h"
 
@@ -683,7 +684,7 @@ breakpoint_notify (int num, const char *action)
       return;
     }
 
-  if (Tcl_Eval (gdbtk_tcl_interp, buf.c_str ()) != TCL_OK)
+  if (Tcl_Eval (gdbtk_get_interp ()->tcl, buf.c_str ()) != TCL_OK)
     report_error ();
 }
 

@@ -50,6 +50,7 @@
 #include <tk.h>
 #include "guitcl.h"
 #include "gdbtk.h"
+#include "gdbtk-interp.h"
 
 #include <signal.h>
 #include <fcntl.h>
@@ -168,7 +169,7 @@ gdbtk_add_hooks (void)
    level of these routines and capture all output from the rest of
    GDB.
 
-   The reason to use the result_ptr rather than the gdbtk_tcl_interp's result
+   The reason to use the result_ptr rather than the tcl interpreter's result
    directly is so that a call_wrapper invoked function can preserve its result
    across calls into Tcl which might be made in the course of the function's
    execution.
@@ -198,6 +199,7 @@ gdbtk_two_elem_cmd (const char *cmd_name, const char *argv1)
 {
   char *command;
   int result, flags_ptr, arg_len, cmd_len;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   arg_len = Tcl_ScanElement (argv1, &flags_ptr);
   cmd_len = strlen (cmd_name);
@@ -207,7 +209,7 @@ gdbtk_two_elem_cmd (const char *cmd_name, const char *argv1)
 
   Tcl_ConvertElement (argv1, command + cmd_len + 1, flags_ptr);
 
-  result = Tcl_Eval (gdbtk_tcl_interp, command);
+  result = Tcl_Eval (interp->tcl, command);
   if (result != TCL_OK)
     report_error ();
   free (command);
@@ -228,10 +230,11 @@ gdbtk_file::read (char *buf, long sizeof_buf)
 {
   int result;
   size_t actual_len;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   if (this == gdb_stdtargin)
     {
-      result = Tcl_Eval (gdbtk_tcl_interp, "gdbtk_console_read");
+      result = Tcl_Eval (interp->tcl, "gdbtk_console_read");
       if (result != TCL_OK)
         {
           report_error ();
@@ -241,7 +244,7 @@ gdbtk_file::read (char *buf, long sizeof_buf)
         }
       else
         {
-          const char *tclResult = Tcl_GetStringResult (gdbtk_tcl_interp);
+          const char *tclResult = Tcl_GetStringResult (interp->tcl);
           actual_len = strlen (tclResult);
 
           /* Truncate the string if it is too big for the caller's buffer.  */
@@ -344,14 +347,15 @@ long
 gdbtk_getpid(void)
 {
   long mypid = -1;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
-  if (Tcl_Eval (gdbtk_tcl_interp, "pid") == TCL_OK)
+  if (Tcl_Eval (interp->tcl, "pid") == TCL_OK)
     {
-      Tcl_Obj *pidobj = Tcl_GetObjResult (gdbtk_tcl_interp);
+      Tcl_Obj *pidobj = Tcl_GetObjResult (interp->tcl);
 
       if (pidobj)
         {
-          if (Tcl_GetLongFromObj (gdbtk_tcl_interp, pidobj, &mypid) != TCL_OK)
+          if (Tcl_GetLongFromObj (interp->tcl, pidobj, &mypid) != TCL_OK)
             mypid = -1;
         }
     }
@@ -408,8 +412,10 @@ gdbtk_warning (const char *warning, va_list args)
 void
 report_error (void)
 {
-  TclDebug ('E', Tcl_GetVar (gdbtk_tcl_interp, "errorInfo", TCL_GLOBAL_ONLY));
-  /*  Tcl_BackgroundError(gdbtk_tcl_interp); */
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  TclDebug ('E', Tcl_GetVar (interp->tcl, "errorInfo", TCL_GLOBAL_ONLY));
+  /*  Tcl_BackgroundError(interp->tcl); */
 }
 
 /*
@@ -421,9 +427,11 @@ void
 gdbtk_ignorable_warning (const char *warnclass, const char *warning)
 {
   char *buf;
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
   buf = xstrprintf ("gdbtk_tcl_ignorable_warning {%s} {%s}",
 		    warnclass, warning);
-  if (Tcl_Eval (gdbtk_tcl_interp, buf) != TCL_OK)
+  if (Tcl_Eval (interp->tcl, buf) != TCL_OK)
     report_error ();
   free(buf);
 }
@@ -431,7 +439,9 @@ gdbtk_ignorable_warning (const char *warnclass, const char *warning)
 static void
 gdbtk_register_changed (struct frame_info *frame, int regno)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_register_changed") != TCL_OK)
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl, "gdbtk_register_changed") != TCL_OK)
     report_error ();
 }
 
@@ -439,7 +449,9 @@ static void
 gdbtk_memory_changed (struct inferior *inferior, CORE_ADDR addr,
 		      ssize_t len, const bfd_byte *data)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_memory_changed") != TCL_OK)
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl, "gdbtk_memory_changed") != TCL_OK)
     report_error ();
 }
 
@@ -476,6 +488,7 @@ x_event (int signo)
 {
   static volatile int in_x_event = 0;
   static Tcl_Obj *varname = NULL;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   /* Do nor re-enter this code or enter it while collecting gdb output. */
   if (in_x_event || gdbtk_in_write)
@@ -503,14 +516,14 @@ x_event (int signo)
 	{
 #if TCL_MAJOR_VERSION == 8 && (TCL_MINOR_VERSION < 1 || TCL_MINOR_VERSION > 2)
 	  Tcl_Obj *varnamestrobj = Tcl_NewStringObj ("download_cancel_ok", -1);
-	  varname = Tcl_ObjGetVar2 (gdbtk_tcl_interp, varnamestrobj,
+	  varname = Tcl_ObjGetVar2 (interp->tcl, varnamestrobj,
                                     NULL, TCL_GLOBAL_ONLY);
 #else
-	  varname = Tcl_GetObjVar2 (gdbtk_tcl_interp, "download_cancel_ok",
+	  varname = Tcl_GetObjVar2 (interp->tcl, "download_cancel_ok",
                                     NULL, TCL_GLOBAL_ONLY);
 #endif
 	}
-      if (Tcl_GetIntFromObj (gdbtk_tcl_interp, varname, &val) == TCL_OK && val)
+      if (Tcl_GetIntFromObj (interp->tcl, varname, &val) == TCL_OK && val)
 	{
 	  set_quit_flag ();
 #ifdef REQUEST_QUIT
@@ -542,6 +555,7 @@ static char *
 gdbtk_readline (const char *prompt)
 {
   int result;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
 #ifdef _WIN32
   close_bfds ();
@@ -551,11 +565,11 @@ gdbtk_readline (const char *prompt)
 
   if (result == TCL_OK)
     {
-      return (xstrdup (Tcl_GetStringResult (gdbtk_tcl_interp)));
+      return (xstrdup (Tcl_GetStringResult (interp->tcl)));
     }
   else
     {
-      gdb_stdout->puts (Tcl_GetStringResult (gdbtk_tcl_interp));
+      gdb_stdout->puts (Tcl_GetStringResult (interp->tcl));
       gdb_stdout->puts ("\n");
       return (NULL);
     }
@@ -564,7 +578,9 @@ gdbtk_readline (const char *prompt)
 static void
 gdbtk_readline_end (void)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_readline_end") != TCL_OK)
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl, "gdbtk_tcl_readline_end") != TCL_OK)
     report_error ();
 }
 
@@ -572,6 +588,8 @@ static void
 gdbtk_call_command (struct cmd_list_element *cmdblk,
 		    const char *arg, int from_tty)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
   running_now = 0;
   if (cmdblk->theclass == class_run || cmdblk->theclass == class_trace)
     {
@@ -579,7 +597,7 @@ gdbtk_call_command (struct cmd_list_element *cmdblk,
 
       running_now = 1;
       if (!No_Update)
-	Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_busy");
+	Tcl_Eval (interp->tcl, "gdbtk_tcl_busy");
       cmd_func (cmdblk, arg, from_tty);
 
       /* The above function may return before the target stops running even
@@ -595,7 +613,7 @@ gdbtk_call_command (struct cmd_list_element *cmdblk,
 
       running_now = 0;
       if (!No_Update)
-	Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_idle");
+	Tcl_Eval (interp->tcl, "gdbtk_tcl_idle");
     }
   else
     cmd_func (cmdblk, arg, from_tty);
@@ -610,6 +628,7 @@ gdbtk_param_changed (const char *param, const char *value)
 {
   Tcl_DString cmd;
   char *buffer = NULL;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   Tcl_DStringInit (&cmd);
   Tcl_DStringAppendElement (&cmd, "gdbtk_tcl_set_variable");
@@ -617,7 +636,7 @@ gdbtk_param_changed (const char *param, const char *value)
   Tcl_DStringAppendElement (&cmd, param);
   Tcl_DStringAppendElement (&cmd, value);
 
-  if (Tcl_Eval (gdbtk_tcl_interp, Tcl_DStringValue (&cmd)) != TCL_OK)
+  if (Tcl_Eval (interp->tcl, Tcl_DStringValue (&cmd)) != TCL_OK)
     report_error ();
 
   Tcl_DStringFree (&cmd);
@@ -632,12 +651,14 @@ int
 gdbtk_load_hash (const char *section, unsigned long num)
 {
   char *buf;
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
   buf = xstrprintf ("Download::download_hash %s %ld", section, num);
-  if (Tcl_Eval (gdbtk_tcl_interp, buf) != TCL_OK)
+  if (Tcl_Eval (interp->tcl, buf) != TCL_OK)
     report_error ();
   free(buf);
 
-  return atoi (Tcl_GetStringResult (gdbtk_tcl_interp));
+  return atoi (Tcl_GetStringResult (interp->tcl));
 }
 
 
@@ -653,7 +674,9 @@ gdbtk_pre_add_symbol (const char *name)
 static void
 gdbtk_post_add_symbol (void)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_post_add_symbol") != TCL_OK)
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl, "gdbtk_tcl_post_add_symbol") != TCL_OK)
     report_error ();
 }
 
@@ -684,6 +707,7 @@ gdbtk_wait (ptid_t ptid, struct target_waitstatus *ourstatus, int options)
 static int
 gdbtk_query (const char *query, va_list args)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
   char *buf;
   long val;
 
@@ -691,7 +715,7 @@ gdbtk_query (const char *query, va_list args)
   gdbtk_two_elem_cmd ("gdbtk_tcl_query", buf);
   free(buf);
 
-  val = atol (Tcl_GetStringResult (gdbtk_tcl_interp));
+  val = atol (Tcl_GetStringResult (interp->tcl));
   return val;
 }
 
@@ -716,18 +740,19 @@ gdbtk_print_frame_info (struct symtab *s, int line,
 static void
 gdbtk_trace_find (int tfnum, int tpnum)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
   Tcl_Obj *cmdObj;
 
   cmdObj = Tcl_NewListObj (0, NULL);
-  Tcl_ListObjAppendElement (gdbtk_tcl_interp, cmdObj,
+  Tcl_ListObjAppendElement (interp->tcl, cmdObj,
 			    Tcl_NewStringObj ("gdbtk_tcl_trace_find_hook", -1));
-  Tcl_ListObjAppendElement (gdbtk_tcl_interp, cmdObj, Tcl_NewIntObj (tfnum));
-  Tcl_ListObjAppendElement (gdbtk_tcl_interp, cmdObj, Tcl_NewIntObj (tpnum));
+  Tcl_ListObjAppendElement (interp->tcl, cmdObj, Tcl_NewIntObj (tfnum));
+  Tcl_ListObjAppendElement (interp->tcl, cmdObj, Tcl_NewIntObj (tpnum));
 #if TCL_MAJOR_VERSION == 8 && (TCL_MINOR_VERSION < 1 || TCL_MINOR_VERSION > 2)
-  if (Tcl_GlobalEvalObj (gdbtk_tcl_interp, cmdObj) != TCL_OK)
+  if (Tcl_GlobalEvalObj (interp->tcl, cmdObj) != TCL_OK)
     report_error ();
 #else
-  if (Tcl_EvalObj (gdbtk_tcl_interp, cmdObj, TCL_EVAL_GLOBAL) != TCL_OK)
+  if (Tcl_EvalObj (interp->tcl, cmdObj, TCL_EVAL_GLOBAL) != TCL_OK)
     report_error ();
 #endif
 }
@@ -744,11 +769,12 @@ gdbtk_trace_find (int tfnum, int tpnum)
 static void
 gdbtk_trace_start_stop (int start, int from_tty)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   if (start)
-    Tcl_GlobalEval (gdbtk_tcl_interp, "gdbtk_tcl_tstart");
+    Tcl_GlobalEval (interp->tcl, "gdbtk_tcl_tstart");
   else
-    Tcl_GlobalEval (gdbtk_tcl_interp, "gdbtk_tcl_tstop");
+    Tcl_GlobalEval (interp->tcl, "gdbtk_tcl_tstop");
 
 }
 
@@ -787,6 +813,7 @@ gdbtk_error_begin (void)
 static void
 gdbtk_annotate_signal (void)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
   char *buf;
   struct thread_info *tp;
 
@@ -794,7 +821,7 @@ gdbtk_annotate_signal (void)
      a necessary stop button evil. We don't want signal notification
      to interfere with the elaborate and painful stop button detach
      timeout. */
-  Tcl_Eval (gdbtk_tcl_interp, "gdbtk_stop_idle_callback");
+  Tcl_Eval (interp->tcl, "gdbtk_stop_idle_callback");
 
   if (inferior_ptid == null_ptid)
     return;
@@ -804,7 +831,7 @@ gdbtk_annotate_signal (void)
   buf = xstrprintf ("gdbtk_signal %s {%s}",
 	     gdb_signal_to_name (tp->suspend.stop_signal),
 	     gdb_signal_to_string (tp->suspend.stop_signal));
-  if (Tcl_Eval (gdbtk_tcl_interp, buf) != TCL_OK)
+  if (Tcl_Eval (interp->tcl, buf) != TCL_OK)
     report_error ();
   free(buf);
 }
@@ -812,7 +839,9 @@ gdbtk_annotate_signal (void)
 static void
 gdbtk_attach (void)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp,
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl,
                 "after idle \"update idletasks;gdbtk_attached\"") != TCL_OK)
     {
       report_error ();
@@ -822,7 +851,9 @@ gdbtk_attach (void)
 static void
 gdbtk_detach (void)
 {
-  if (Tcl_Eval (gdbtk_tcl_interp, "gdbtk_detached") != TCL_OK)
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  if (Tcl_Eval (interp->tcl, "gdbtk_detached") != TCL_OK)
     {
       report_error ();
     }
@@ -832,7 +863,9 @@ gdbtk_detach (void)
 static void
 gdbtk_architecture_changed (struct gdbarch *ignore)
 {
-  Tcl_Eval (gdbtk_tcl_interp, "gdbtk_tcl_architecture_changed");
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  Tcl_Eval (interp->tcl, "gdbtk_tcl_architecture_changed");
 }
 
 ptid_t

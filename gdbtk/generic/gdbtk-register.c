@@ -1,5 +1,5 @@
 /* Tcl/Tk command definitions for Insight - Registers
-   Copyright (C) 2001-2018 Free Software Foundation, Inc.
+   Copyright (C) 2001-2019 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -32,6 +32,7 @@
 #include <tcl.h>
 #include "gdbtk.h"
 #include "gdbtk-cmds.h"
+#include "gdbtk-interp.h"
 
 
 /* Extended reg_buffer class to handle register comparison, types & formats. */
@@ -328,7 +329,9 @@ gdb_register_info (ClientData clientData, Tcl_Interp *interp, int objc,
 static void
 get_register_size (int regnum, map_arg arg)
 {
-  Tcl_ListObjAppendElement (gdbtk_tcl_interp, result_ptr->obj_ptr,
+  gdbtk_interp *interp = gdbtk_get_interp ();
+
+  Tcl_ListObjAppendElement (interp->tcl, result_ptr->obj_ptr,
 			    Tcl_NewIntObj (register_size (get_current_arch (),
 							  regnum)));
 }
@@ -337,11 +340,12 @@ static void
 get_register_collectable (int regnum, map_arg arg)
 {
   int iscollectable = 1;
+  gdbtk_interp *interp = gdbtk_get_interp ();
 
   if (regnum >= gdbarch_num_regs (get_current_arch ()))
     iscollectable = gdbarch_ax_pseudo_register_collect_p (get_current_arch ());
 
-  Tcl_ListObjAppendElement (gdbtk_tcl_interp, result_ptr->obj_ptr,
+  Tcl_ListObjAppendElement (interp->tcl, result_ptr->obj_ptr,
 			    Tcl_NewIntObj (iscollectable));
 }
 
@@ -352,6 +356,7 @@ get_register_collectable (int regnum, map_arg arg)
 static void
 get_register_types (int regnum, map_arg arg)
 {
+  gdbtk_interp *interp = gdbtk_get_interp ();
   struct type *reg_vtype;
   int i,n;
 
@@ -376,7 +381,7 @@ get_register_types (int regnum, map_arg arg)
 	  else
 	    ar[2] = Tcl_NewStringObj ("int", -1);
 	  list = Tcl_NewListObj (3, ar);
-	  Tcl_ListObjAppendElement (gdbtk_tcl_interp,
+	  Tcl_ListObjAppendElement (interp->tcl,
                                     result_ptr->obj_ptr, list);
 	}
     }
@@ -391,7 +396,7 @@ get_register_types (int regnum, map_arg arg)
       else
 	ar[2] = Tcl_NewStringObj ("int", -1);
       list = Tcl_NewListObj (3, ar);
-      Tcl_ListObjAppendElement (gdbtk_tcl_interp, result_ptr->obj_ptr, list);
+      Tcl_ListObjAppendElement (interp->tcl, result_ptr->obj_ptr, list);
     }
 }
 
