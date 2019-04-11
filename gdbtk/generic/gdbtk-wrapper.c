@@ -1,5 +1,5 @@
 /* longjmp-free interface between gdb and gdbtk.
-   Copyright (C) 1999-2016 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -31,16 +31,15 @@
 
 /* Error catcher macro. */
 #define GDBTK_CATCH_ERRORS(statement)					\
-		TRY							\
+		try							\
 		  {							\
 		    statement;						\
 		  }							\
-		CATCH (ex, RETURN_MASK_ERROR)				\
+                catch (const gdb_exception_error &ex)			\
 		  {							\
 		    exception_print (gdb_stderr, ex);			\
 		    return GDB_ERROR;					\
 		  }							\
-		END_CATCH						\
 		return GDB_OK;
 
 

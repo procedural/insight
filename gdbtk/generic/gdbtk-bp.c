@@ -577,7 +577,7 @@ gdb_set_bp (ClientData clientData, Tcl_Interp *interp,
 
   location = string_to_event_location (&address, current_language);
 
-  TRY
+  try
     {
       create_breakpoint (get_current_arch (), location.get (), condition,
 			 thread,
@@ -592,10 +592,9 @@ gdb_set_bp (ClientData clientData, Tcl_Interp *interp,
 			 enabled, 0, 0);
       ret = TCL_OK;
     }
-  CATCH (e, RETURN_MASK_ALL)
+  catch (const gdb_exception &)
     {
     }
-  END_CATCH
 
   return ret;
 }

@@ -359,7 +359,7 @@ Gdbtk_Init (Tcl_Interp *interp)
 }
 
 /* This routine acts as a top-level for all GDB code called by Tcl/Tk.  It
-   handles cleanups, and uses TRY/CATCH to trap calls to return_to_top_level
+   handles cleanups, and uses try/catch to trap calls to return_to_top_level
    (usually via error).
    This is necessary in order to prevent a longjmp out of the bowels of Tk,
    possibly leaving things in a bad state.  Since this routine can be called
@@ -379,14 +379,14 @@ gdbtk_call_wrapper (ClientData clientData, Tcl_Interp *interp,
   result_ptr->obj_ptr = Tcl_NewObj ();
   result_ptr->flags = GDBTK_TO_RESULT;
 
-  TRY
+  try
     {
       val = ((Tcl_ObjCmdProc *) clientData) (clientData, interp, objc, objv);
       /* If the call returned an error directly, then we don't
 	 want to reset the result.  */
       wrapped_returned_error = val == TCL_ERROR;
     }
-  CATCH (ex, RETURN_MASK_ALL)
+  catch (const gdb_exception &ex)
     {
       exception_print (gdb_stderr, ex);
       val = TCL_ERROR;	/* Flag an error for TCL */
@@ -411,7 +411,6 @@ gdbtk_call_wrapper (ClientData clientData, Tcl_Interp *interp,
       running_now = 0;
       Tcl_Eval (interp, "gdbtk_tcl_idle");
     }
-  END_CATCH
 
   /* do not suppress any errors -- a remote target could have errored */
   load_in_progress = 0;
@@ -1928,7 +1927,7 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
      suck it out of the result, and replace... */
 
   old_result_ptr = result_ptr;
-  TRY
+  try
     {
       result_ptr = &new_result;
       result_ptr->obj_ptr = client_data->result_obj[0];
@@ -1991,12 +1990,11 @@ gdbtk_load_asm (ClientData clientData, CORE_ADDR pc,
           Tcl_DStringSetLength (&client_data->line_to_pc_prefix, line_to_pc_len);
         }
     }
-  CATCH (e, RETURN_MASK_ALL)
+  catch (const gdb_exception &)
     {
       result_ptr = old_result_ptr;
-      exception_rethrow ();
+      throw;
     }
-  END_CATCH
 
   result_ptr = old_result_ptr;
 
@@ -2725,15 +2723,14 @@ gdb_loadfile (ClientData clientData, Tcl_Interp *interp, int objc,
 
   if (stat (file, &st) < 0)
     {
-      TRY
+      try
         {
           perror_with_name_wrapper ((PTR) "gdbtk: get time stamp");
         }
-      CATCH (ex, RETURN_MASK_ALL)
+      catch (const gdb_exception &ex)
         {
           exception_print (gdb_stderr, ex);
         }
-      END_CATCH
       return TCL_ERROR;
     }
 

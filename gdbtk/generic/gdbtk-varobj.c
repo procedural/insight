@@ -1,5 +1,5 @@
 /* Variable user interface layer for GDB, the GNU debugger.
-   Copyright (C) 1999-2018 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -589,15 +589,14 @@ variable_value (Tcl_Interp *interp, int objc,
 	  int ok = 0;
 
 	  s = Tcl_GetStringFromObj (objv[2], NULL);
-	  TRY
+	  try
 	    {
 	      ok = varobj_set_value (var, s);
 	    }
-	  CATCH (e, RETURN_MASK_ERROR)
+          catch (const gdb_exception_error &)
 	    {
 	      ok = 0;
 	    }
-          END_CATCH
 
 	  if (!ok)
 	    {
@@ -633,7 +632,7 @@ variable_print (Tcl_Interp *interp, int objc,
   string_file stream;
   int ret = TCL_ERROR;
 
-  TRY
+  try
     {
       struct value_print_options opts;
 
@@ -644,11 +643,10 @@ variable_print (Tcl_Interp *interp, int objc,
       Tcl_SetObjResult (interp, Tcl_NewStringObj (stream.data (), -1));
       ret = TCL_OK;
     }
-  CATCH (except, RETURN_MASK_ERROR)
+  catch (const gdb_exception_error &except)
     {
       gdbtk_set_result (interp, "<error reading variable: %s>", except.message);
     }
-  END_CATCH
 
   return ret;
 }

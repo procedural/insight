@@ -15,7 +15,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  /* Data point to pass to the event handler.  */
  typedef union event_data
  {
-@@ -431,12 +424,17 @@ start_event_loop (void)
+@@ -430,12 +423,17 @@ start_event_loop (void)
     doesn't have to know implementation details about the use of poll
     vs. select.  */
  void
@@ -34,7 +34,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
    if (use_poll)
      {
  #ifdef HAVE_POLL
-@@ -445,8 +443,15 @@ add_file_handler (int fd, handler_func *
+@@ -444,8 +442,15 @@ add_file_handler (int fd, handler_func *
           m68k-motorola-sys, `poll' cannot be used to wait for `stdin'.
           On m68k-motorola-sysv, tty's are not stream-based and not
           `poll'able.  */
@@ -51,7 +51,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
        if (poll (&fds, 1, 0) == 1 && (fds.revents & POLLNVAL))
  	use_poll = 0;
  #else
-@@ -457,15 +462,14 @@ add_file_handler (int fd, handler_func *
+@@ -456,15 +461,14 @@ add_file_handler (int fd, handler_func *
    if (use_poll)
      {
  #ifdef HAVE_POLL

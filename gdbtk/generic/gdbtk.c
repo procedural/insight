@@ -958,7 +958,6 @@ gdbtk_find_main";
 
   if (Tcl_GlobalEval (interp->tcl, (char *) script) != TCL_OK)
     {
-      struct gdb_exception e;
       const char *msg;
 
       /* Force errorInfo to be set up propertly.  */
@@ -978,10 +977,7 @@ gdbtk_find_main";
       fputs (msg, stderr);
 #endif
 
-      e.reason  = RETURN_ERROR;
-      e.error   = GENERIC_ERROR;
-      e.message = msg;
-      throw_exception (e);
+      throw_error (GENERIC_ERROR, "%s", msg);
     }
 
   /* Now source in the filename provided by the --tclcommand option.
