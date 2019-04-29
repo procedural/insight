@@ -143,7 +143,7 @@ gdbtk_interp::suspend ()
 gdb_exception
 gdbtk_interp::exec (const char *command_str)
 {
-  return exception_none;
+  return gdb_exception ();
 }
 
 /* This function is called before entering gdb's internal command loop.

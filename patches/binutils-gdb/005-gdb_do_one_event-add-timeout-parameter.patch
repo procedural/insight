@@ -1,7 +1,7 @@
 diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
 --- binutils-gdb.orig/gdb/event-loop.c	2018-03-23 03:30:50.445949749 +0100
 +++ binutils-gdb.new/gdb/event-loop.c	2018-03-30 19:07:34.688587776 +0200
-@@ -286,17 +286,28 @@ initialize_async_signal_handlers (void)
+@@ -285,17 +285,28 @@ initialize_async_signal_handlers (void)
  		    async_signals_handler, NULL);
  }
  
@@ -31,7 +31,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
  
    /* First let's see if there are any asynchronous signal handlers
       that are ready.  These would be the result of invoking any of the
-@@ -308,8 +319,6 @@ gdb_do_one_event (void)
+@@ -307,8 +318,6 @@ gdb_do_one_event (void)
       round-robin fashion.  */
    for (current = 0; current < number_of_sources; current++)
      {
@@ -40,7 +40,7 @@ diff -Naurp binutils-gdb.orig/gdb/event-loop.c binutils-gdb.new/gdb/event-loop.c
        switch (event_source_head)
  	{
  	case 0:
-@@ -342,14 +351,26 @@ gdb_do_one_event (void)
+@@ -341,14 +350,26 @@ gdb_do_one_event (void)
    /* Block waiting for a new event.  If gdb_wait_for_event returns -1,
       we should get out because this means that there are no event
       sources left.  This will make the event loop stop, and the
