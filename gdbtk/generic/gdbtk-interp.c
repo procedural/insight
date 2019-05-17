@@ -183,7 +183,9 @@ gdbtk_interp::interp_ui_out ()
 }
 
 void
-gdbtk_interp::set_logging (ui_file_up logfile, bool logging_redirect)
+gdbtk_interp::set_logging (ui_file_up logfile,
+                           bool logging_redirect,
+                           bool debug_redirect)
 {
 }
 

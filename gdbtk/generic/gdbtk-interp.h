@@ -41,7 +41,9 @@ public:
   void suspend () override;
   gdb_exception exec (const char * command_str) override;
   ui_out *interp_ui_out () override;
-  void set_logging (ui_file_up logfile, bool logging_redirect) override;
+  void set_logging (ui_file_up logfile,
+                    bool logging_redirect,
+                    bool debug_redirect) override;
   void pre_command_loop () override;
 
   ui_file *_stdout;
