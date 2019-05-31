@@ -2,14 +2,14 @@
 - Unbundle tcl/tk/itcl/itk/iwidgets.
 
 diff -Naurp a/configure.ac b/configure.ac
---- a/configure.ac	2018-06-19 12:18:03.167947274 +0200
-+++ b/configure.ac	2018-06-19 12:19:17.925581129 +0200
+--- a/configure.ac	2019-05-31 05:52:54.856175374 +0200
++++ b/configure.ac	2019-05-31 06:04:57.125737433 +0200
 @@ -131,7 +131,7 @@ build_tools="build-texinfo build-flex bu
  
  # these libraries are used by various programs built for the host environment
  #f
--host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl libelf libiconv"
-+host_libs="intl libiberty opcodes bfd readline libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl libelf libiconv"
+-host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl libelf libiconv libctf"
++host_libs="intl libiberty opcodes bfd readline libgui zlib libbacktrace libcpp libdecnumber gmp mpfr mpc isl libelf libiconv libctf"
  
  # these tools are built for the host environment
  # Note, the powerpc-eabi build depends on sim occurring before gdb in order to
@@ -44,7 +44,7 @@ diff -Naurp a/configure.ac b/configure.ac
  AC_ARG_ENABLE(libquadmath,
  AS_HELP_STRING([--disable-libquadmath],
    [do not build libquadmath directory]),
-@@ -952,7 +937,7 @@ case "${target}" in
+@@ -968,7 +953,7 @@ case "${target}" in
      ;;
      # The tpf target doesn't support gdb yet.
    *-*-tpf*)
@@ -53,7 +53,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    *-*-uclinux*)
      noconfigdirs="$noconfigdirs target-rda"
-@@ -972,7 +957,7 @@ case "${target}" in
+@@ -988,7 +973,7 @@ case "${target}" in
      noconfigdirs="$noconfigdirs target-newlib target-libgloss"
      ;;
    sh*-*-pe|mips*-*-pe|*arm-wince-pe)
@@ -62,7 +62,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    arc*-*-*)
      noconfigdirs="$noconfigdirs sim"
-@@ -1042,15 +1027,15 @@ case "${target}" in
+@@ -1058,15 +1043,15 @@ case "${target}" in
      ;;
    ia64*-*-elf*)
      # No gdb support yet.
@@ -81,7 +81,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    i[[3456789]]86-w64-mingw*)
      ;;
-@@ -1106,13 +1091,13 @@ case "${target}" in
+@@ -1122,13 +1107,13 @@ case "${target}" in
      ;;
    powerpc*-*-winnt* | powerpc*-*-pe*)
      target_configdirs="$target_configdirs target-winsup"
@@ -97,7 +97,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
-@@ -2684,7 +2669,7 @@ if echo " ${target_configdirs} " | grep
+@@ -2700,7 +2685,7 @@ if echo " ${target_configdirs} " | grep
    bootstrap_target_libs=${bootstrap_target_libs}target-libvtv,
  fi
  
@@ -106,7 +106,7 @@ diff -Naurp a/configure.ac b/configure.ac
  # Use 'maybe' since enable_gdbtk might be true even if tk isn't available
  # and in that case we want gdb to be built without tk.  Ugh!
  # In fact I believe gdb is the *only* package directly dependent on tk,
-@@ -2692,7 +2677,7 @@ fi
+@@ -2708,7 +2693,7 @@ fi
  # leave out the maybe dependencies when enable_gdbtk is false.  I'm not
  # 100% sure that that's safe though.
  
@@ -116,8 +116,8 @@ diff -Naurp a/configure.ac b/configure.ac
    no)
      GDB_TK="" ;;
 diff -Naurp a/MAINTAINERS b/MAINTAINERS
---- a/MAINTAINERS	2017-04-30 18:15:03.060180194 +0200
-+++ b/MAINTAINERS	2018-06-19 12:19:17.925581129 +0200
+--- a/MAINTAINERS	2019-05-31 05:52:54.831175123 +0200
++++ b/MAINTAINERS	2019-05-31 06:00:57.974221106 +0200
 @@ -94,10 +94,6 @@ texinfo/texinfo.tex
  	imported at any (reasonable) time.
  	Please not use GCC's texinfo.  Please do not import texinfo.
@@ -130,8 +130,8 @@ diff -Naurp a/MAINTAINERS b/MAINTAINERS
  	cygwin: http://sourceware.org/cygwin
  	Patches to cygwin-patches@cygwin.com.
 diff -Naurp a/Makefile.def b/Makefile.def
---- a/Makefile.def	2018-06-19 12:18:03.145947093 +0200
-+++ b/Makefile.def	2018-06-19 12:19:17.926581138 +0200
+--- a/Makefile.def	2019-05-31 05:52:54.831175123 +0200
++++ b/Makefile.def	2019-05-31 06:00:57.975221112 +0200
 @@ -75,9 +75,6 @@ host_modules= { module= libelf; lib_path
  host_modules= { module= gold; bootstrap=true; };
  host_modules= { module= gprof; };
@@ -150,7 +150,7 @@ diff -Naurp a/Makefile.def b/Makefile.def
  host_modules= { module= libtermcap; no_check=true; 
                  missing=mostlyclean;
                  missing=clean;
-@@ -400,12 +396,6 @@ dependencies = { module=all-gdb; on=all-
+@@ -402,12 +398,6 @@ dependencies = { module=all-gdb; on=all-
  dependencies = { module=all-gdb; on=all-libdecnumber; };
  dependencies = { module=all-gdb; on=all-libtermcap; };
  
@@ -163,7 +163,7 @@ diff -Naurp a/Makefile.def b/Makefile.def
  // Host modules specific to binutils.
  dependencies = { module=configure-bfd; on=configure-libiberty; hard=true; };
  dependencies = { module=configure-bfd; on=configure-intl; };
-@@ -474,35 +464,11 @@ dependencies = { module=all-opcodes; on=
+@@ -477,35 +467,11 @@ dependencies = { module=all-opcodes; on=
  dependencies = { module=all-opcodes; on=all-intl; };
  
  // Other host modules in the 'src' repository.
