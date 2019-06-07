@@ -44,7 +44,7 @@ diff -Naurp a/configure.ac b/configure.ac
  AC_ARG_ENABLE(libquadmath,
  AS_HELP_STRING([--disable-libquadmath],
    [do not build libquadmath directory]),
-@@ -968,7 +953,7 @@ case "${target}" in
+@@ -952,7 +927,7 @@ case "${target}" in
      ;;
      # The tpf target doesn't support gdb yet.
    *-*-tpf*)
@@ -53,7 +53,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    *-*-uclinux*)
      noconfigdirs="$noconfigdirs target-rda"
-@@ -988,7 +973,7 @@ case "${target}" in
+@@ -972,7 +957,7 @@ case "${target}" in
      noconfigdirs="$noconfigdirs target-newlib target-libgloss"
      ;;
    sh*-*-pe|mips*-*-pe|*arm-wince-pe)
@@ -62,7 +62,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    arc*-*-*)
      noconfigdirs="$noconfigdirs sim"
-@@ -1058,15 +1043,15 @@ case "${target}" in
+@@ -1042,15 +1027,15 @@ case "${target}" in
      ;;
    ia64*-*-elf*)
      # No gdb support yet.
@@ -81,7 +81,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    i[[3456789]]86-w64-mingw*)
      ;;
-@@ -1122,13 +1107,13 @@ case "${target}" in
+@@ -1106,13 +1091,13 @@ case "${target}" in
      ;;
    powerpc*-*-winnt* | powerpc*-*-pe*)
      target_configdirs="$target_configdirs target-winsup"
@@ -97,7 +97,7 @@ diff -Naurp a/configure.ac b/configure.ac
      ;;
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs gdb"
-@@ -2700,7 +2685,7 @@ if echo " ${target_configdirs} " | grep
+@@ -2684,7 +2669,7 @@ if echo " ${target_configdirs} " | grep
    bootstrap_target_libs=${bootstrap_target_libs}target-libvtv,
  fi
  
@@ -106,7 +106,7 @@ diff -Naurp a/configure.ac b/configure.ac
  # Use 'maybe' since enable_gdbtk might be true even if tk isn't available
  # and in that case we want gdb to be built without tk.  Ugh!
  # In fact I believe gdb is the *only* package directly dependent on tk,
-@@ -2708,7 +2693,7 @@ fi
+@@ -2692,7 +2677,7 @@ fi
  # leave out the maybe dependencies when enable_gdbtk is false.  I'm not
  # 100% sure that that's safe though.
  
