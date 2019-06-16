@@ -1871,7 +1871,7 @@ gdbtk_load_source (ClientData clientData, struct symtab *symtab,
       /* The file is not yet open, try to open it, then print the
 	 first line.  If we fail, set FILE_OPEN_P to -1. */
 
-      fdes = open_source_file (symtab).release ();
+      fdes = open_source_file_with_line_charpos (symtab).release ();
       if (fdes < 0)
 	{
 	  client_data->file_opened_p = -1;
@@ -1887,9 +1887,6 @@ gdbtk_load_source (ClientData clientData, struct symtab *symtab,
 	  client_data->file_opened_p = 1;
 	  client_data->fp = fdopen (fdes, FOPEN_RB);
 	  clearerr (client_data->fp);
-
-          if (symtab->line_charpos == 0)
-            find_source_lines (symtab, fdes);
 
 	  /* We are called with an actual load request, so call ourselves
 	     to load the first line. */

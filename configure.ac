@@ -106,9 +106,9 @@ dnl Now regenerate the configure files
 	autoconf --force
 )
 (
-	cd bundle/gdb/gnulib
+	cd bundle/gnulib
 	echo "Regenerate `pwd`"
-	aclocal -I . -I import/m4 -I ../../config
+	aclocal -I . -I import/m4 -I ../config
 	automake --add-missing
 	autoconf --force
 )

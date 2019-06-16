@@ -96,7 +96,7 @@ diff -Naurp a/gdb/acinclude.m4 b/gdb/acinclude.m4
 diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 --- a/gdb/configure.ac	2016-11-25 14:24:44.200083830 +0100
 +++ b/gdb/configure.ac	2016-11-25 14:35:02.115813705 +0100
-@@ -1992,60 +1992,34 @@ if test "${enable_gdbtk}" = "yes"; then
+@@ -1970,60 +1970,34 @@ if test "${enable_gdbtk}" = "yes"; then
      if test -z "${no_tcl}" -a -z "${no_tk}"; then
  	SC_LOAD_TCLCONFIG
  
@@ -178,7 +178,7 @@ diff -Naurp a/gdb/configure.ac b/gdb/configure.ac
 diff -Naurp a/gdb/Makefile.in b/gdb/Makefile.in
 --- a/gdb/Makefile.in	2016-11-25 14:24:44.190083746 +0100
 +++ b/gdb/Makefile.in	2016-11-25 14:36:23.590282737 +0100
-@@ -520,7 +520,7 @@ SUBDIR_GDBTK_SRCS = \
+@@ -516,7 +516,7 @@ SUBDIR_GDBTK_SRCS = \
  
  SUBDIR_GDBTK_DEPS = $(LIBGUI) $(TCL_DEPS) $(TK_DEPS)
  SUBDIR_GDBTK_LDFLAGS =
