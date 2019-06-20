@@ -112,8 +112,6 @@ extern
 
 void gdbtk_init (void);
 
-void gdbtk_interactive (void);
-
 static void tk_command (const char *, int);
 
 static int target_should_use_timer (struct target_ops *t);
@@ -577,15 +575,6 @@ gdbtk_uninstall_notifier (void)
 /*
  * The rest of this file contains the start-up, and event handling code for gdbtk.
  */
-
-/* Come here during long calculations to check for GUI events.  Usually invoked
-   via the QUIT macro.  */
-
-void
-gdbtk_interactive (void)
-{
-  /* Tk_DoOneEvent (TK_DONT_WAIT|TK_IDLE_EVENTS); */
-}
 
 /* Start a timer which will keep the GUI alive while in target_wait. */
 void

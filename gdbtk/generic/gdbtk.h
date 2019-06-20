@@ -156,7 +156,6 @@ extern void gdbtk_stop_timer (void);
 extern void gdbtk_start_timer (void);
 extern long gdbtk_getpid(void);
 extern void gdbtk_ignorable_warning (const char *, const char *);
-extern void gdbtk_interactive (void);
 extern int x_event (int);
 extern int gdbtk_two_elem_cmd (char *, const char *);
 extern int target_is_native (struct target_ops *t);

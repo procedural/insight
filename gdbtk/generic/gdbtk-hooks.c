@@ -143,7 +143,6 @@ gdbtk_add_hooks (void)
   deprecated_query_hook = gdbtk_query;
   deprecated_warning_hook = gdbtk_warning;
 
-  deprecated_interactive_hook = gdbtk_interactive;
   deprecated_target_wait_hook = gdbtk_wait;
   deprecated_ui_load_progress_hook = gdbtk_load_hash;
 
